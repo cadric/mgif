@@ -5,11 +5,24 @@ IFS=$'\n\t'
 readonly SCRIPT_NAME="$(basename "$0")"
 readonly SCRIPT_VERSION="18.0.0"
 readonly LOG_FILE="${LOG_FILE:-/var/log/mfgi-setup.log}"
+readonly LOG_MAX_SIZE="${LOG_MAX_SIZE:-10485760}"  # 10MB default
+readonly LOG_KEEP_ROTATED="${LOG_KEEP_ROTATED:-3}"  # Keep 3 rotated logs
+readonly NO_EMOJI="${NO_EMOJI:-0}"
+
+# GNOME extension lists for different desktop styles
+readonly WINDOWS_EXTENSIONS=(
+    "dash-to-panel@jderose9.github.com"
+    "arcmenu@arcmenu.com"
+    "appindicatorsupport@rgcjonas.gmail.com"
+)
+
+readonly MACOS_EXTENSIONS=(
+    "dash-to-dock@micxgx.gmail.com"
+    "appindicatorsupport@rgcjonas.gmail.com"
+)
 
 # Global state
 TEMP_DIR=""
-USER_CHOICES=()
-INSTALL_RESULTS=("changed" "skipped" "failed")
 declare -a CHANGED_ITEMS=()
 declare -a SKIPPED_ITEMS=()
 declare -a FAILED_ITEMS=()
@@ -52,17 +65,28 @@ cleanup() {
         tput cnorm 2>/dev/null || true
         printf '%s' "${RESET:-}"
         log_error "Unexpected error occurred (exit code: $exit_code) on line ${BASH_LINENO[0]:-unknown}"
+        
+        # Log error to file if logging is set up
+        if [[ -f "$LOG_FILE" ]]; then
+            {
+                printf '=== Session terminated with error at %s ===\n' "$(date '+%Y-%m-%d %H:%M:%S')"
+                printf 'Exit code: %d, Line: %s\n' "$exit_code" "${BASH_LINENO[0]:-unknown}"
+                printf '==========================================\n'
+            } >> "$LOG_FILE" 2>/dev/null
+        fi
+        
         # Only print summary if we have initialized the tracking arrays
         if [[ -v CHANGED_ITEMS ]]; then
             print_summary
         fi
     fi
     [[ -n "$TEMP_DIR" ]] && rm -rf "$TEMP_DIR"
-    return $exit_code
 }
 
 trap cleanup EXIT
 trap 'die "unexpected error at line $LINENO (exit code $?)"' ERR
+trap 'die "Interrupted (SIGINT)"' INT
+trap 'die "Terminated (SIGTERM)"' TERM
 
 # Logging functions
 log_debug() { [[ "${DEBUG:-0}" == "1" ]] && printf '[DEBUG] %s\n' "$*"; }
@@ -70,21 +94,81 @@ log_info()  { printf '[INFO ] %s\n' "$*"; }
 log_warn()  { printf '[WARN ] %s\n' "$*" >&2; }
 log_error() { printf '[ERROR] %s\n' "$*" >&2; }
 
+# Log file rotation and size management
+setup_logging() {
+    local log_dir
+    log_dir="$(dirname "$LOG_FILE")"
+    
+    # Create log directory if it doesn't exist
+    if [[ ! -d "$log_dir" ]]; then
+        mkdir -p "$log_dir" 2>/dev/null || return 1
+    fi
+    
+    # Check if log file exists and needs rotation
+    if [[ -f "$LOG_FILE" ]]; then
+        local log_size
+        log_size=$(stat -c%s "$LOG_FILE" 2>/dev/null || echo 0)
+        
+        # Rotate if log file exceeds maximum size
+        if (( log_size > LOG_MAX_SIZE )); then
+            rotate_log_files
+        fi
+    fi
+    
+    # Initialize log file with session header
+    {
+        printf '\n'
+        printf '=== %s v%s - Session started at %s ===\n' \
+            "$SCRIPT_NAME" "$SCRIPT_VERSION" "$(date '+%Y-%m-%d %H:%M:%S')"
+        printf 'PID: %d, User: %s, Args: %s\n' \
+            $$ "${USER:-unknown}" "${*:-none}"
+        printf '=================================\n'
+    } >> "$LOG_FILE" 2>/dev/null || return 1
+    
+    return 0
+}
+
+# Rotate log files when they get too large
+rotate_log_files() {
+    [[ -f "$LOG_FILE" ]] || return 0
+    
+    local i
+    # Move existing rotated logs (keep only LOG_KEEP_ROTATED files)
+    for (( i = LOG_KEEP_ROTATED; i > 1; i-- )); do
+        local old_log="${LOG_FILE}.$((i-1))"
+        local new_log="${LOG_FILE}.${i}"
+        [[ -f "$old_log" ]] && mv "$old_log" "$new_log" 2>/dev/null
+    done
+    
+    # Move current log to .1
+    mv "$LOG_FILE" "${LOG_FILE}.1" 2>/dev/null || true
+    
+    # Create new empty log file
+    touch "$LOG_FILE" 2>/dev/null || true
+    chmod 644 "$LOG_FILE" 2>/dev/null || true
+    
+    log_info "Log file rotated (previous logs kept: ${LOG_KEEP_ROTATED})"
+}
+
+# Emoji helper function
+emoji() { [[ "$NO_EMOJI" = 1 ]] && printf '' || printf '%s' "$1"; }
+
 # UI helper functions
 headline()     { printf '%s%s%s\n'    "${BOLD}${CYAN}" "$*" "$RESET" >&2; }
 subhead()      { printf '%s%s%s\n'    "$GREEN"    "$*" "$RESET" >&2; }
 emph()         { printf '%s%s%s\n'    "$MAGENTA"  "$*" "$RESET" >&2; }
-muted()        { printf '%s%s%s\n'    "$DIM"      "$*" "$RESET" >&2; }
-warning()      { printf '%s%s%s\n'    "${BOLD}${RED}" "$*" "$RESET" >&2; }
+muted()        { local content; if [[ -p /dev/stdin ]]; then content=$(cat); else content="$*"; fi; printf '%s%s%s\n'    "$DIM"      "$content" "$RESET" >&2; }
+warning()      { local content; if [[ -p /dev/stdin ]]; then content=$(cat); else content="$*"; fi; printf '%s%s%s\n'    "${BOLD}${RED}" "$content" "$RESET" >&2; }
 hint()         { printf '%s%s%s\n'    "$YELLOW"   "$*" "$RESET" >&2; }
 prompt_line()  { printf '%s%s%s' "${BOLD}${YELLOW}" "$*" "$RESET" >&2; }
-status_ok()    { printf '%s✅ %s%s\n' "$GREEN" "$*" "$RESET" >&2; }
-status_warn()  { printf '%s⚠️  %s%s\n' "$YELLOW" "$*" "$RESET" >&2; }
-status_fail()  { printf '%s❌ %s%s\n' "$RED" "$*" "$RESET" >&2; }
+status_ok()    { printf '%s%s %s%s\n' "$GREEN" "$(emoji "✅")" "$*" "$RESET" >&2; }
+status_warn()  { printf '%s%s %s%s\n' "$YELLOW" "$(emoji "⚠️")" "$*" "$RESET" >&2; }
+status_fail()  { printf '%s%s %s%s\n' "$RED" "$(emoji "❌")" "$*" "$RESET" >&2; }
+status_skip()  { printf '%s%s %s%s\n' "$CYAN" "$(emoji "⏭️")" "$*" "$RESET" >&2; }
 
 usage() {
-    cat <<'EOF'
-Usage: mfgi_setup_refactored.sh [OPTIONS]
+    cat <<EOF
+Usage: $SCRIPT_NAME [OPTIONS]
 
 A minimal Fedora GNOME installer with interactive setup.
 
@@ -104,26 +188,38 @@ Environment Variables:
   MFGI_SKIP_GRUB       Override GRUB configuration (yes|no)
   MFGI_STYLE           Override extension style (1-3)
   MFGI_INSTALL_WALLPAPERS Override wallpaper installation (yes|no)
+  MFGI_FLATHUB_SUBSET  Use verified subset of Flathub (verified|full)
+  LOG_FILE             Log file location (default: /var/log/mfgi-setup.log)
+  LOG_MAX_SIZE         Max log size before rotation (default: 10MB)
+  LOG_KEEP_ROTATED     Number of rotated logs to keep (default: 3)
   DEBUG                Enable debug logging (0|1)
   NO_COLOR             Disable colored output
+  NO_EMOJI             Disable emoji output (0|1)
+
+$(printf '\nDefaults: scope=%s, apps=%s, wallpapers=%s, style=%s, hide-grub=%s\n' \
+  "${MFGI_FORCE_SCOPE:-user}" "${MFGI_INSTALL_APPS:-no}" \
+  "${MFGI_INSTALL_WALLPAPERS:-no}" "${MFGI_STYLE:-1}" "${MFGI_SKIP_GRUB:-no}")
 
 Examples:
   # Interactive mode (default)
-  sudo ./mfgi_setup_refactored.sh
+  sudo ./$SCRIPT_NAME
 
   # Non-interactive with options
-  sudo ./mfgi_setup_refactored.sh --scope system --install-apps yes --style 2
+  sudo ./$SCRIPT_NAME --scope system --install-apps yes --style 2
 
   # Dry run to see what would happen
-  sudo ./mfgi_setup_refactored.sh --dry-run
+  sudo ./$SCRIPT_NAME --dry-run
 
 EOF
 }
 
 # Dependency checking
 check_dependencies() {
-    local deps=("dnf" "systemctl" "tput")
+    local deps=("dnf" "systemctl" "tput" "su")
+    local optional_deps=("dbus-run-session")
+    [[ "${DRY_RUN:-0}" = "1" ]] || deps+=("curl")
     local missing=()
+    local missing_optional=()
     
     for dep in "${deps[@]}"; do
         if ! command -v "$dep" >/dev/null 2>&1; then
@@ -131,8 +227,23 @@ check_dependencies() {
         fi
     done
     
+    for dep in "${optional_deps[@]}"; do
+        if ! command -v "$dep" >/dev/null 2>&1; then
+            missing_optional+=("$dep")
+        fi
+    done
+    
     if [[ ${#missing[@]} -gt 0 ]]; then
         die "Missing required dependencies: ${missing[*]}"
+    fi
+    
+    # Install optional dependencies if missing and not in dry-run mode
+    if [[ ${#missing_optional[@]} -gt 0 ]] && [[ "${DRY_RUN:-0}" != "1" ]]; then
+        log_info "Installing missing optional dependencies: ${missing_optional[*]}"
+        if ! dnf -y install "${missing_optional[@]}"; then
+            warning "Could not install optional dependencies: ${missing_optional[*]}"
+            warning "Some features may not work correctly"
+        fi
     fi
 }
 
@@ -225,6 +336,13 @@ run_with_spinner() {
         return 0
     fi
     
+    # In non-interactive mode, just run the command without spinner
+    if [[ "${NON_INTERACTIVE:-0}" == "1" ]]; then
+        log_info "$msg..."
+        "$@"
+        return $?
+    fi
+    
     local pid spin i
     printf '%s... ' "$msg"
     "$@" & pid=$!
@@ -238,24 +356,26 @@ run_with_spinner() {
     wait "$pid"
     local rc=$?
     printf '\b'
+    (( rc == 0 )) || printf '%sFAILED%s\n' "$RED" "$RESET" >&2
     return $rc
 }
 
 # Safe file editing with backup
 safe_edit_file() {
-    local file="$1"
-    shift
-    
-    if [[ "${DRY_RUN:-0}" == "1" ]]; then
-        log_info "DRY-RUN: would edit file: $file"
-        return 0
-    fi
-    
+    local file="$1"; shift
+    [[ "${DRY_RUN:-0}" == "1" ]] && { log_info "DRY-RUN: would edit file: $file"; return 0; }
     local backup
-    backup=$(mktemp --tmpdir="$TEMP_DIR" "$(basename "$file").bak.XXXXXX")
-    cp -a -- "$file" "$backup"
-    log_debug "Created backup of $file at $backup"
-    "$@"
+    backup=$(mktemp --tmpdir="$TEMP_DIR" "$(basename "$file").bak.XXXXXX") || return 1
+    cp -a -- "$file" "$backup" || return 1
+    # Ensure backup file has secure permissions AFTER copying (cp -a preserves source attributes)
+    chmod 600 "$backup" || return 1
+    log_debug "Backup of $file at $backup"
+    "$@"; local rc=$?
+    if (( rc != 0 )); then
+        log_warn "Edit failed for $file; restoring original"
+        cp -a -- "$backup" "$file" || log_error "Restore failed; backup at $backup"
+    fi
+    return $rc
 }
 
 # Result tracking
@@ -265,7 +385,7 @@ track_result() {
     
     case "$status" in
         changed) CHANGED_ITEMS+=("$message"); status_ok "$message" ;;
-        skipped) SKIPPED_ITEMS+=("$message"); status_ok "$message" ;;
+        skipped) SKIPPED_ITEMS+=("$message"); status_skip "$message" ;;
         failed)  FAILED_ITEMS+=("$message"); status_fail "$message" ;;
         *) die "Invalid result status: $status" ;;
     esac
@@ -369,7 +489,7 @@ collect_user_preferences() {
         return 0
     fi
     
-    headline "mfgi v18 — Minimal Fedora GNOME Install"
+    headline "Minimal Fedora GNOME Install"
     printf '\n'
     
     # License display
@@ -377,9 +497,13 @@ collect_user_preferences() {
     subhead "MIT No Attribution License"
     emph "Copyright 2025 Cadric"
     printf '\n'
-    muted "Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so."
+    muted <<EOF
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so.
+EOF
     printf '\n'
-    warning "THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE."
+    warning <<EOF
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+EOF
     printf '\n'
     
     headline "Configuration Questions:"
@@ -387,10 +511,10 @@ collect_user_preferences() {
     
     # Collect preferences based on environment or interactively
     local scope_choice="2"  # Default to user
-    local apps_choice="no"
-    local wallpapers_choice="no" 
-    local style_choice="1"
-    local grub_choice="no"
+    local install_apps_choice="no"
+    local install_wallpapers_choice="no" 
+    local extension_style_choice="1"
+    local hide_grub_choice="no"
     
     # Override from environment if set
     if [[ -n "${MFGI_FORCE_SCOPE:-}" ]]; then
@@ -407,41 +531,41 @@ collect_user_preferences() {
     fi
     
     if [[ -n "${MFGI_INSTALL_APPS:-}" ]]; then
-        apps_choice="${MFGI_INSTALL_APPS,,}"
+        install_apps_choice="${MFGI_INSTALL_APPS,,}"
     else
-        hint "Install a curated set of useful, open-source Flatpak applications?"
-        muted "• Includes: Extension Manager, Flatseal, LibreWolf, and other system utilities."
-        apps_choice="$(ask_yesno "Install this recommended app bundle?" "n")"
+        hint "Install a curated set of useful GNOME and essential applications?"
+        muted "• Includes: Calculator, Text Editor, Image Viewer, Music Player, Firefox, and Extension Manager."
+        install_apps_choice="$(ask_yesno "Install this recommended app bundle?" "n")"
     fi
     
     if [[ -n "${MFGI_INSTALL_WALLPAPERS:-}" ]]; then
-        wallpapers_choice="${MFGI_INSTALL_WALLPAPERS,,}"
+        install_wallpapers_choice="${MFGI_INSTALL_WALLPAPERS,,}"
     else
         hint "Install a custom wallpaper set that supports both light and dark modes?"
-        wallpapers_choice="$(ask_yesno "Set up these custom wallpapers?" "n")"
+        install_wallpapers_choice="$(ask_yesno "Set up these custom wallpapers?" "n")"
     fi
     
     if [[ -n "${MFGI_STYLE:-}" ]]; then
-        style_choice="$MFGI_STYLE"
+        extension_style_choice="$MFGI_STYLE"
     else
-        style_choice="$(ask_choice "Which style (extensions) do you want installed and enabled:" 1 \
+        extension_style_choice="$(ask_choice "Which style (extensions) do you want installed and enabled:" 1 \
                        "GNOME Default (No extensions)" \
                        "Windows style (Dash to Panel + ArcMenu + Tray Icons)" \
                        "macOS style (Dash to Dock + Tray Icons)")"
     fi
     
     if [[ -n "${MFGI_SKIP_GRUB:-}" ]]; then
-        grub_choice="${MFGI_SKIP_GRUB,,}"
+        hide_grub_choice="${MFGI_SKIP_GRUB,,}"
     else
-        grub_choice="$(ask_yesno "Do you wish to hide GRUB and boot directly to GNOME?" "n")"
+        hide_grub_choice="$(ask_yesno "Do you wish to hide GRUB and boot directly to GNOME?" "n")"
     fi
     
     # Store choices globally as readonly to prevent accidental overrides
     readonly USER_FLATPAK_SCOPE="$scope_choice"
-    readonly USER_INSTALL_APPS="$apps_choice"  
-    readonly USER_INSTALL_WALLPAPERS="$wallpapers_choice"
-    readonly USER_EXTENSION_STYLE="$style_choice"
-    readonly USER_HIDE_GRUB="$grub_choice"
+    readonly USER_INSTALL_APPS="$install_apps_choice"  
+    readonly USER_INSTALL_WALLPAPERS="$install_wallpapers_choice"
+    readonly USER_EXTENSION_STYLE="$extension_style_choice"
+    readonly USER_HIDE_GRUB="$hide_grub_choice"
     
     # Show summary
     printf '\n'
@@ -449,11 +573,11 @@ collect_user_preferences() {
     local scope_text
     [[ "$scope_choice" == "1" ]] && scope_text="System-wide" || scope_text="Current user only"
     printf '%s• Flatpak scope:%s %s\n' "$CYAN" "$RESET" "$scope_text"
-    printf '%s• Install curated apps:%s %s\n' "$CYAN" "$RESET" "$apps_choice"
-    printf '%s• Install wallpapers:%s %s\n' "$CYAN" "$RESET" "$wallpapers_choice"
+    printf '%s• Install curated apps:%s %s\n' "$CYAN" "$RESET" "$install_apps_choice"
+    printf '%s• Install wallpapers:%s %s\n' "$CYAN" "$RESET" "$install_wallpapers_choice"
     local style_names=("GNOME Default" "Windows style" "macOS style")
-    printf '%s• Extension style:%s %s\n' "$CYAN" "$RESET" "${style_names[$((style_choice-1))]}"
-    printf '%s• Hide GRUB menu:%s %s\n' "$CYAN" "$RESET" "$grub_choice"
+    printf '%s• Extension style:%s %s\n' "$CYAN" "$RESET" "${style_names[$((extension_style_choice-1))]}"
+    printf '%s• Hide GRUB menu:%s %s\n' "$CYAN" "$RESET" "$hide_grub_choice"
     printf '\n'
     
     if [[ "$(ask_yesno "Proceed with installation using these settings?" "y")" == "no" ]]; then
@@ -471,7 +595,7 @@ install_base_packages() {
     
     local packages=(
         "gnome-shell"
-        "gnome-terminal" 
+        "gnome-console" 
         "nautilus"
         "gnome-software"
         "gnome-disks"
@@ -489,11 +613,11 @@ install_base_packages() {
     )
     
     if ! run_with_spinner "Updating dnf cache" dnf -y makecache; then
-        log_warn "DNF makecache failed, continuing anyway..."
+        warning "DNF makecache failed, continuing anyway..."
     fi
 
     if ! run_with_spinner "Upgrading system packages" dnf upgrade -y --refresh; then
-        log_warn "DNF upgrade failed, continuing anyway..."
+        warning "DNF upgrade failed, continuing anyway..."
     fi
     
     if run_with_spinner "Installing packages: ${packages[*]}" \
@@ -517,12 +641,26 @@ remove_unwanted_packages() {
     )
     
     if [[ "${DRY_RUN:-0}" == "1" ]]; then
-        log_info "DRY-RUN: would remove packages: ${unwanted[*]}"
+        log_info "DRY-RUN: would check and remove packages: ${unwanted[*]}"
+        track_result "changed" "Unwanted packages: would be removed"
         return 0
     fi
     
-    dnf -y remove "${unwanted[@]}" || true
-    track_result "changed" "Removed unwanted packages"
+    # Check which packages are actually installed
+    local to_remove=()
+    for p in "${unwanted[@]}"; do
+        rpm -q "$p" &>/dev/null && to_remove+=("$p")
+    done
+    
+    if (( ${#to_remove[@]} > 0 )); then
+        if dnf -y remove "${to_remove[@]}"; then
+            track_result "changed" "Removed: ${to_remove[*]}"
+        else
+            track_result "failed" "DNF remove failed"
+        fi
+    else
+        track_result "skipped" "No unwanted GNOME packages present"
+    fi
 }
 
 # Flatpak configuration
@@ -544,6 +682,70 @@ configure_flatpak() {
         return 1
     fi
     
+    muted "Disabling Fedora's Flatpak remotes (system + user) and preventing auto-addition..."
+
+    if [[ "${DRY_RUN:-0}" != "1" ]]; then
+        # Mask third-party services that add Fedora remotes (only if they exist)
+        for u in flatpak-add-fedora-repos.service fedora-flathub.service fedora-third-party.service; do
+            if systemctl cat "$u" >/dev/null 2>&1; then
+                systemctl mask --now "$u" >/dev/null 2>&1 || true
+            fi
+        done
+
+        # 2) Find primary user
+        local user
+        user="$(detect_primary_user)"
+
+        # 3) Function: disable + de-enumerate + try to delete, both by known names and by URL match
+        disable_flatpak_fedora_remotes() {
+            local scope_flag="$1" # --system or --user
+
+            # Known names across Fedora versions
+            local known=(fedora fedora-testing updates updates-testing)
+
+            # Also catch everything pointing to registry.fedoraproject.org – including disabled ones
+            mapfile -t byurl < <(
+                flatpak remotes "$scope_flag" --show-disabled --columns=name,url 2>/dev/null \
+                | awk '$2 ~ /registry\.fedoraproject\.org/ {print $1}'
+            )
+
+            # Collect and deduplicate
+            mapfile -t names < <(printf '%s\n' "${known[@]}" "${byurl[@]}" | awk 'NF && !seen[$0]++')
+
+            for r in "${names[@]}"; do
+                # Disable and make them invisible for search/auto-deps
+                flatpak remote-modify "$scope_flag" --disable --no-enumerate --no-use-for-deps "$r" \
+                    >/dev/null 2>&1 || true
+
+                # Also try to remove – if there are no refs, it will disappear completely
+                flatpak remote-delete "$scope_flag" --noninteractive "$r" \
+                    >/dev/null 2>&1 || true
+            done
+        }
+
+        # System installation
+        disable_flatpak_fedora_remotes --system
+
+        # User installation
+        if [[ -n "$user" && "$user" != "root" ]]; then
+            run_as_user "$user" bash -lc 'set -euo pipefail
+                disable_flatpak_user_remotes() {
+                    local known=(fedora fedora-testing updates updates-testing)
+                    mapfile -t byurl < <(flatpak remotes --user --show-disabled --columns=name,url 2>/dev/null \
+                                         | awk '"'"'$2 ~ /registry\.fedoraproject\.org/ {print $1}'"'"')
+                    mapfile -t names < <(printf "%s\n" "${known[@]}" "${byurl[@]}" | awk '"'"'NF && !seen[$0]++'"'"')
+                    for r in "${names[@]}"; do
+                        flatpak remote-modify --user --disable --no-enumerate --no-use-for-deps "$r" >/dev/null 2>&1 || true
+                        flatpak remote-delete  --user --noninteractive "$r" >/dev/null 2>&1 || true
+                    done
+                }
+                disable_flatpak_user_remotes
+            '
+        fi
+    fi
+
+    status_ok "Fedora Flatpak remotes are now disabled and hidden (if they existed)."
+    
     
     case "${USER_FLATPAK_SCOPE:-2}" in
         1)
@@ -552,11 +754,17 @@ configure_flatpak() {
                 track_result "changed" "Flathub: would be configured (system)"
             elif flatpak --system remote-ls flathub >/dev/null 2>&1; then
                 track_result "skipped" "Flathub: already configured (system)"
+                muted "Refreshing appstream…"
                 flatpak update -y --appstream --system || true
             else
                 muted "Adding Flathub remote system-wide..."
-                if flatpak remote-add --if-not-exists --system flathub https://dl.flathub.org/repo/flathub.flatpakrepo; then
+                local flathub_url="https://dl.flathub.org/repo/flathub.flatpakrepo"
+                local args=(remote-add --if-not-exists --system flathub "$flathub_url")
+                [[ "${MFGI_FLATHUB_SUBSET:-}" = "verified" ]] && args=(remote-add --if-not-exists --system --subset=verified flathub "$flathub_url")
+                if flatpak "${args[@]}"; then
+                    [[ "${MFGI_FLATHUB_SUBSET:-}" = "verified" ]] && muted "Using verified subset of Flathub for enhanced security"
                     track_result "changed" "Flathub: configured (system)"
+                    muted "Refreshing appstream…"
                     flatpak update -y --appstream --system || true
                 else
                     track_result "failed" "Flathub: could not be added (system)"
@@ -572,11 +780,17 @@ configure_flatpak() {
                     track_result "changed" "Flathub: would be configured (user)"
                 elif run_as_user "$user" flatpak --user remote-ls flathub >/dev/null 2>&1; then
                     track_result "skipped" "Flathub: already configured (user)"
+                    muted "Refreshing appstream…"
                     run_as_user "$user" flatpak update -y --appstream --user || true
                 else
                     muted "Adding Flathub remote for user: $user"
-                    if run_as_user "$user" flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo; then
+                    local flathub_url="https://dl.flathub.org/repo/flathub.flatpakrepo"
+                    local args=(remote-add --if-not-exists --user flathub "$flathub_url")
+                    [[ "${MFGI_FLATHUB_SUBSET:-}" = "verified" ]] && args=(remote-add --if-not-exists --user --subset=verified flathub "$flathub_url")
+                    if run_as_user "$user" flatpak "${args[@]}"; then
+                        [[ "${MFGI_FLATHUB_SUBSET:-}" = "verified" ]] && muted "Using verified subset of Flathub for enhanced security"
                         track_result "changed" "Flathub: configured (user)"
+                        muted "Refreshing appstream…"
                         run_as_user "$user" flatpak update -y --appstream --user || true
                     else
                         track_result "failed" "Flathub: could not be added (user)"
@@ -600,13 +814,15 @@ install_curated_flatpaks() {
     subhead "Installing curated Flatpak applications..."
     
     local apps=(
+        "org.gnome.Calculator"
+        "org.gnome.Showtime"
+        "org.gnome.TextEditor"
+        "org.gnome.Loupe"
+        "org.gnome.Decibels"
+        "org.mozilla.firefox"
+        "page.tesk.Refine"
         "io.github.flattool.Ignition"
         "com.mattjakeman.ExtensionManager"
-        "page.tesk.Refine"
-        "com.github.tchx84.Flatseal"
-        "net.nokyan.Resources"
-        "io.github.flattool.Warehouse"
-        "io.gitlab.librewolf-community"
     )
     
     local install_cmd_prefix="flatpak install -y"
@@ -620,6 +836,9 @@ install_curated_flatpaks() {
         install_user="$(detect_primary_user)"
     fi
     
+    # Export function so sub-shells can access it
+    export -f run_with_spinner
+    
     for app in "${apps[@]}"; do
         muted "Installing $app..."
         
@@ -629,15 +848,7 @@ install_curated_flatpaks() {
             continue
         fi
         
-        local full_cmd="$install_cmd_prefix $app"
-        
-        local script
-        printf -v script '%s; run_with_spinner %q %s' \
-            "$(declare -f run_with_spinner)" \
-            "Installing $app" \
-            "$full_cmd"
-        
-        if run_as_user "$install_user" bash -c "$script"; then
+        if run_as_user "$install_user" bash -c "run_with_spinner 'Installing $app' $install_cmd_prefix $app"; then
             track_result "changed" "Flatpak: installed $app"
         else
             if run_as_user "$install_user" flatpak info "$app" >/dev/null 2>&1; then
@@ -647,6 +858,9 @@ install_curated_flatpaks() {
             fi
         fi
     done
+    
+    # Clean up exported function
+    export -f -n run_with_spinner
 }
 
 # Wallpaper installation
@@ -682,7 +896,10 @@ fetch_png_from_url() {
         return 0
     fi
     
-    curl -fLso "$output_file" "$url" || return 1
+    curl --fail --location --show-error \
+         --proto '=https' --proto-redir '=https' \
+         --retry 3 --retry-delay 1 \
+         --silent --output "$output_file" "$url" || return 1
     png_signature_ok "$output_file"
 }
 
@@ -775,6 +992,12 @@ install_wallpapers() {
         local dark_uri="file://$dark_wallpaper"
         
         muted "Applying wallpapers for user '$user' via gsettings..."
+        muted "Setting GNOME background keys:"
+        muted "  org.gnome.desktop.background picture-uri = '$light_uri'"
+        muted "  org.gnome.desktop.background picture-uri-dark = '$dark_uri'"
+        muted "  org.gnome.desktop.background picture-options = 'zoom'"
+        muted "  org.gnome.desktop.screensaver picture-uri = '$dark_uri'"
+        
         local gsettings_cmd="gsettings set org.gnome.desktop.background picture-uri '$light_uri' && \
 gsettings set org.gnome.desktop.background picture-uri-dark '$dark_uri' && \
 gsettings set org.gnome.desktop.background picture-options 'zoom' && \
@@ -782,9 +1005,19 @@ gsettings set org.gnome.desktop.screensaver picture-uri '$dark_uri'"
         
         if run_as_user_dbus "$user" bash -lc "$gsettings_cmd"; then
             track_result "changed" "Wallpapers: applied for current session"
+            log_info "GNOME background keys configured for user $user"
+            log_info "  picture-uri: $light_uri"
+            log_info "  picture-uri-dark: $dark_uri" 
+            log_info "  picture-options: zoom"
+            log_info "  screensaver picture-uri: $dark_uri"
         else
             track_result "changed" "Wallpapers: installed (will take effect on next login)"
+            warning "Could not apply wallpapers to current session - changes will be visible after logout/login"
+            muted "gsettings configuration failed - wallpapers set but not applied to current session"
         fi
+        
+        # Note about when changes take effect
+        muted "Note: Some wallpaper changes may only be visible after logging out and back in"
     else
         warning "No non-root user detected; skipping per-user wallpaper settings"
         track_result "changed" "Wallpapers: installed system-wide only"
@@ -831,15 +1064,8 @@ ensure_gext_for_user() {
         return 0
     fi
     
-    muted "Attempting to install gext via pip --user..."
-    if run_as_user "$user" bash -lc 'python3 -m pip install --user --break-system-packages --disable-pip-version-check --quiet gnome-extensions-cli'; then
-        if run_as_user "$user" bash -lc '[[ -x "$HOME/.local/bin/gext" ]]'; then
-            status_ok "Successfully installed gext via pip --user."
-            return 0
-        fi
-    fi
-    
-    muted "pip --user failed, trying pipx..."
+    # Try pipx first
+    muted "Attempting to install gext via pipx..."
     if ! command -v pipx >/dev/null 2>&1; then
         muted "pipx not found, installing it now..."
         dnf -y install pipx
@@ -852,6 +1078,14 @@ ensure_gext_for_user() {
                 status_ok "Successfully installed gext via pipx."
                 return 0
             fi
+        fi
+    fi
+    
+    muted "pipx failed, trying pip --user as fallback..."
+    if run_as_user "$user" bash -lc 'python3 -m pip install --user --break-system-packages --disable-pip-version-check --quiet gnome-extensions-cli'; then
+        if run_as_user "$user" bash -lc '[[ -x "$HOME/.local/bin/gext" ]]'; then
+            status_ok "Successfully installed gext via pip --user."
+            return 0
         fi
     fi
     
@@ -931,12 +1165,7 @@ apply_extension_style() {
             fi
             
             # Install GNOME extensions for Windows-like style
-            local windows_extensions=(
-                "dash-to-panel@jderose9.github.com"
-                "arcmenu@arcmenu.com"
-                "appindicatorsupport@rgcjonas.gmail.com"
-            )
-            install_extensions_for_style "$user" "${windows_extensions[@]}"
+            install_extensions_for_style "$user" "${WINDOWS_EXTENSIONS[@]}"
             ;;
         3)
             subhead "Applying macOS-like desktop style..."
@@ -948,11 +1177,7 @@ apply_extension_style() {
             fi
             
             # Install GNOME extensions for macOS-like style
-            local macos_extensions=(
-                "dash-to-dock@micxgx.gmail.com"
-                "appindicatorsupport@rgcjonas.gmail.com"
-            )
-            install_extensions_for_style "$user" "${macos_extensions[@]}"
+            install_extensions_for_style "$user" "${MACOS_EXTENSIONS[@]}"
             ;;
         *)
             warning "Unknown style '$style'; leaving default."
@@ -971,13 +1196,25 @@ enable_services() {
         return 0
     fi
     
-    if systemctl list-unit-files | grep -q '^NetworkManager\.service'; then
+    if systemctl list-unit-files --type=service --no-legend | grep -q '^NetworkManager\.service'; then
         systemctl enable --now NetworkManager || warning "Could not enable NetworkManager."
     fi
     
     systemctl set-default graphical.target
-    ln -sfn /usr/lib/systemd/system/graphical.target /etc/systemd/system/default.target
     track_result "changed" "System target set to 'graphical'"
+}
+
+# Helper function to update or add configuration lines
+_update_or_add_line() {
+    local file="$1"
+    local key="$2"
+    local value="$3"
+    
+    # Smart sed command that either updates existing line or adds new one
+    # If line with key= exists, replace it; otherwise append at end
+    sed -i -e "/^${key}=/c\\${key}=${value}" -e "\$a\\${key}=${value}" "$file"
+    # Remove duplicate lines that might have been created
+    sed -i "/^${key}=/h; /^${key}=/d; \${x; /^${key}=/p;}" "$file"
 }
 
 # GRUB configuration
@@ -998,25 +1235,58 @@ configure_grub() {
     local grub_file="/etc/default/grub"
     touch "$grub_file"
     
-    safe_edit_file "$grub_file" \
-        sed -i 's/^GRUB_TIMEOUT_STYLE=.*/GRUB_TIMEOUT_STYLE=hidden/' "$grub_file"
-    grep -q '^GRUB_TIMEOUT_STYLE=' "$grub_file" || echo 'GRUB_TIMEOUT_STYLE=hidden' >> "$grub_file"
+    safe_edit_file "$grub_file" bash -c '
+        # Define helper function in subshell
+        _update_or_add_line() {
+            local file="$1"
+            local key="$2" 
+            local value="$3"
+            if grep -q "^${key}=" "$file"; then
+                sed -i "s|^${key}=.*|${key}=${value}|" "$file"
+            else
+                echo "${key}=${value}" >> "$file"
+            fi
+        }
+        
+        # Update GRUB configuration parameters
+        _update_or_add_line "$0" "GRUB_TIMEOUT_STYLE" "hidden"
+        _update_or_add_line "$0" "GRUB_TIMEOUT" "0"
+        _update_or_add_line "$0" "GRUB_RECORDFAIL_TIMEOUT" "0"
+    ' "$grub_file"
     
-    safe_edit_file "$grub_file" \
-        sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=0/' "$grub_file"
-    grep -q '^GRUB_TIMEOUT=' "$grub_file" || echo 'GRUB_TIMEOUT=0' >> "$grub_file"
-    
-    safe_edit_file "$grub_file" \
-        sed -i 's/^GRUB_RECORDFAIL_TIMEOUT=.*/GRUB_RECORDFAIL_TIMEOUT=0/' "$grub_file"
-    grep -q '^GRUB_RECORDFAIL_TIMEOUT=' "$grub_file" || echo 'GRUB_RECORDFAIL_TIMEOUT=0' >> "$grub_file"
-    
-    status_ok "GRUB default file updated."
+    status_ok "GRUB default file updated: $grub_file"
     
     muted "Applying GRUB configuration..."
     if [[ -d /sys/firmware/efi ]]; then
-        grub2-mkconfig -o /boot/efi/EFI/fedora/grub.cfg >/dev/null 2>&1 || warning "grub2-mkconfig failed for EFI system."
+        # On EFI systems, always generate the main config at /boot/grub2/grub.cfg
+        # The EFI shim at /boot/efi/EFI/fedora/grub.cfg chains to this file
+        local main_config="/boot/grub2/grub.cfg"
+        local efi_shim="/boot/efi/EFI/fedora/grub.cfg"
+        
+        if grub2-mkconfig -o "$main_config" >/dev/null 2>&1; then
+            status_ok "GRUB configuration updated: $main_config"
+            
+            # Check if EFI shim exists and note the chaining relationship
+            if [[ -f "$efi_shim" ]]; then
+                muted "EFI shim detected at $efi_shim (chains to $main_config)"
+            else
+                muted "Note: EFI shim not found at $efi_shim - may be created on next boot"
+            fi
+        else
+            warning "grub2-mkconfig failed for EFI system"
+            track_result "failed" "GRUB: configuration update failed"
+            return 1
+        fi
     else
-        grub2-mkconfig -o /boot/grub2/grub.cfg >/dev/null 2>&1 || warning "grub2-mkconfig failed for BIOS system."
+        # On BIOS systems, generate config directly
+        local bios_config="/boot/grub2/grub.cfg"
+        if grub2-mkconfig -o "$bios_config" >/dev/null 2>&1; then
+            status_ok "GRUB configuration updated: $bios_config"
+        else
+            warning "grub2-mkconfig failed for BIOS system"
+            track_result "failed" "GRUB: configuration update failed"
+            return 1
+        fi
     fi
     
     track_result "changed" "GRUB: hidden boot menu configured"
@@ -1058,7 +1328,7 @@ parse_arguments() {
     local scope="${MFGI_FORCE_SCOPE:-user}"
     local install_apps="${MFGI_INSTALL_APPS:-no}"
     local install_wallpapers="${MFGI_INSTALL_WALLPAPERS:-no}"
-    local style="${MFGI_STYLE:-1}"
+    local extension_style="${MFGI_STYLE:-1}"
     local hide_grub="${MFGI_SKIP_GRUB:-no}"
     local has_args=0
     
@@ -1086,7 +1356,7 @@ parse_arguments() {
                 ;;
             -t|--style)
                 [[ -n "${2:-}" ]] || die "Option $1 requires an argument"
-                style="$2"
+                extension_style="$2"
                 shift 2
                 ;;
             -g|--hide-grub)
@@ -1131,9 +1401,9 @@ parse_arguments() {
         *) die "Invalid install-wallpapers value '$install_wallpapers'. Must be 'yes' or 'no'" ;;
     esac
     
-    case "$style" in
+    case "$extension_style" in
         1|2|3) ;;
-        *) die "Invalid style '$style'. Must be 1, 2, or 3" ;;
+        *) die "Invalid style '$extension_style'. Must be 1, 2, or 3" ;;
     esac
     
     case "$hide_grub" in
@@ -1150,7 +1420,7 @@ parse_arguments() {
         readonly USER_FLATPAK_SCOPE="$([[ "$scope" == "system" ]] && echo "1" || echo "2")"
         readonly USER_INSTALL_APPS="$install_apps"
         readonly USER_INSTALL_WALLPAPERS="$install_wallpapers"
-        readonly USER_EXTENSION_STYLE="$style"
+        readonly USER_EXTENSION_STYLE="$extension_style"
         readonly USER_HIDE_GRUB="$hide_grub"
         readonly NON_INTERACTIVE=1
         log_info "Non-interactive mode: using command-line arguments"
@@ -1174,20 +1444,26 @@ main() {
     # Initialize
     init_colors
     TEMP_DIR=$(mktemp -d)
+    # Ensure temp directory has secure permissions
+    chmod 700 "$TEMP_DIR" || die "Could not secure temporary directory"
     
     # Parse command line
     parse_arguments "$@"
     
+    # Setup logging with rotation if running in terminal
+    if [[ -t 1 && "${DRY_RUN:-0}" != "1" ]]; then
+        if setup_logging; then
+            # Redirect stdout and stderr to both terminal and log file
+            exec > >(tee -a "$LOG_FILE") 2>&1
+            log_info "Logging to: $LOG_FILE (max size: $((LOG_MAX_SIZE / 1024 / 1024))MB, keep: $LOG_KEEP_ROTATED rotated)"
+        else
+            warning "Could not setup logging to $LOG_FILE - continuing without log file"
+        fi
+    fi
+    
     # Validate environment
     check_dependencies
     validate_system
-    
-    # Setup logging if running in terminal
-    if [[ -t 1 ]] && [[ "${DRY_RUN:-0}" != "1" ]]; then
-        touch "$LOG_FILE"
-        chown root:root "$LOG_FILE" 2>/dev/null || true
-        exec > >(tee -a "$LOG_FILE") 2>&1
-    fi
     
     log_info "Starting $SCRIPT_NAME v$SCRIPT_VERSION"
     
@@ -1204,9 +1480,18 @@ main() {
     # Show summary
     print_summary
     
+    # Log session completion
+    if [[ -f "$LOG_FILE" ]]; then
+        {
+            printf '=== Session completed at %s ===\n' "$(date '+%Y-%m-%d %H:%M:%S')"
+            printf 'Exit status: success\n'
+            printf '=====================================\n'
+        } >> "$LOG_FILE" 2>/dev/null
+    fi
+    
     # Final message
     printf '\n'
-    headline "mfgi v18 installation completed! 🎉"
+    headline "mfgi v18 installation completed! $(emoji "🎉")"
     status_ok "The system is now configured. A reboot is required to see all changes."
     
     if [[ -n "$LOG_FILE" && -f "$LOG_FILE" ]]; then
