@@ -84,7 +84,7 @@ cleanup() {
 }
 
 trap cleanup EXIT
-trap 'die "unexpected error at line $LINENO (exit code $?)"' ERR
+trap 'die "unexpected error at line ${LINENO} (exit code $?)"' ERR
 trap 'die "Interrupted (SIGINT)"' INT
 trap 'die "Terminated (SIGTERM)"' TERM
 
@@ -106,12 +106,23 @@ setup_logging() {
     
     # Check if log file exists and needs rotation
     if [[ -f "$LOG_FILE" ]]; then
-        local log_size
-        log_size=$(stat -c%s "$LOG_FILE" 2>/dev/null || echo 0)
-        
-        # Rotate if log file exceeds maximum size
-        if (( log_size > LOG_MAX_SIZE )); then
-            rotate_log_files
+        # Use file locking to prevent race conditions during rotation
+        local lock_file="${LOG_FILE}.lock"
+        if (
+            # Try to acquire exclusive lock with timeout
+            exec 200>"$lock_file"
+            if flock -n 200 2>/dev/null; then
+                local log_size
+                log_size=$(stat -c%s "$LOG_FILE" 2>/dev/null || echo 0)
+                
+                # Rotate if log file exceeds maximum size
+                if (( log_size > LOG_MAX_SIZE )); then
+                    rotate_log_files
+                fi
+            fi
+        ); then
+            # Lock acquired and released successfully
+            rm -f "$lock_file" 2>/dev/null || true
         fi
     fi
     
@@ -132,22 +143,67 @@ setup_logging() {
 rotate_log_files() {
     [[ -f "$LOG_FILE" ]] || return 0
     
+    # Use atomic operations to prevent corruption during rotation
+    local temp_log="${LOG_FILE}.tmp.$$"
+    local lock_file="${LOG_FILE}.rotate.lock"
+    
+    # Acquire exclusive lock for rotation
+    exec 201>"$lock_file"
+    if ! flock -n 201 2>/dev/null; then
+        # Another process is already rotating, skip
+        exec 201>&-
+        return 0
+    fi
+    
+    # Double-check file still exists and needs rotation
+    if [[ ! -f "$LOG_FILE" ]]; then
+        flock -u 201 2>/dev/null || true
+        exec 201>&-
+        rm -f "$lock_file" 2>/dev/null || true
+        return 0
+    fi
+    
+    local current_size
+    current_size=$(stat -c%s "$LOG_FILE" 2>/dev/null || echo 0)
+    if (( current_size <= LOG_MAX_SIZE )); then
+        # File no longer needs rotation
+        flock -u 201 2>/dev/null || true
+        exec 201>&-
+        rm -f "$lock_file" 2>/dev/null || true
+        return 0
+    fi
+    
+    # Perform atomic rotation
     local i
     # Move existing rotated logs (keep only LOG_KEEP_ROTATED files)
     for (( i = LOG_KEEP_ROTATED; i > 1; i-- )); do
         local old_log="${LOG_FILE}.$((i-1))"
         local new_log="${LOG_FILE}.${i}"
-        [[ -f "$old_log" ]] && mv "$old_log" "$new_log" 2>/dev/null
+        [[ -f "$old_log" ]] && mv "$old_log" "$new_log" 2>/dev/null || true
     done
     
-    # Move current log to .1
-    mv "$LOG_FILE" "${LOG_FILE}.1" 2>/dev/null || true
+    # Create new empty log atomically
+    touch "$temp_log" 2>/dev/null || {
+        flock -u 201 2>/dev/null || true
+        exec 201>&-
+        rm -f "$lock_file" 2>/dev/null || true
+        return 1
+    }
+    chmod 644 "$temp_log" 2>/dev/null || true
     
-    # Create new empty log file
-    touch "$LOG_FILE" 2>/dev/null || true
-    chmod 644 "$LOG_FILE" 2>/dev/null || true
+    # Move current log to .1 and replace with new empty log
+    if mv "$LOG_FILE" "${LOG_FILE}.1" 2>/dev/null && mv "$temp_log" "$LOG_FILE" 2>/dev/null; then
+        log_info "Log file rotated (previous logs kept: ${LOG_KEEP_ROTATED})"
+    else
+        # Restore on failure
+        [[ -f "${LOG_FILE}.1" ]] && mv "${LOG_FILE}.1" "$LOG_FILE" 2>/dev/null || true
+        rm -f "$temp_log" 2>/dev/null || true
+    fi
     
-    log_info "Log file rotated (previous logs kept: ${LOG_KEEP_ROTATED})"
+    # Release lock and cleanup
+    flock -u 201 2>/dev/null || true
+    exec 201>&-
+    rm -f "$lock_file" 2>/dev/null || true
 }
 
 # Emoji helper function
@@ -292,7 +348,10 @@ detect_primary_user() {
     elif user="$(logname 2>/dev/null)" && [[ "$user" != "root" ]]; then
         :  # user is already set
     else
-        user="$(awk -F: '$3>=1000 && $1!="nobody" {print $1; exit}' /etc/passwd 2>/dev/null || true)"
+        user=""
+        while IFS=: read -r username _ uid _; do
+            [[ "$uid" -ge 1000 && "$username" != "nobody" ]] && { user="$username"; break; }
+        done < /etc/passwd 2>/dev/null || true
     fi
     
     printf '%s' "$user"
@@ -306,8 +365,13 @@ run_as_user() {
     if [[ -z "$user" || "$user" == "root" ]]; then
         "$@"
     else
-        local cmd
-        printf -v cmd '%q ' "$@"
+        # Build properly escaped command string
+        local cmd_parts=()
+        local arg
+        for arg in "$@"; do
+            cmd_parts+=("$(printf '%q' "$arg")")
+        done
+        local cmd="${cmd_parts[*]}"
         su - "$user" -s /bin/bash -c "$cmd"
     fi
 }
@@ -320,8 +384,13 @@ run_as_user_dbus() {
     if [[ -z "$user" || "$user" == "root" ]]; then
         dbus-run-session "$@"
     else
-        local cmd
-        printf -v cmd '%q ' "$@"
+        # Build properly escaped command string
+        local cmd_parts=()
+        local arg
+        for arg in "$@"; do
+            cmd_parts+=("$(printf '%q' "$arg")")
+        done
+        local cmd="${cmd_parts[*]}"
         su - "$user" -s /bin/bash -c "dbus-run-session $cmd"
     fi
 }
@@ -350,7 +419,7 @@ run_with_spinner() {
     i=0
     while kill -0 "$pid" 2>/dev/null; do
         i=$(( (i+1) %4 ))
-        printf '\b%s' "${spinner:$i:1}"
+        printf '\b%s' "${spinner:${i}:1}"
         sleep 0.2
     done
     wait "$pid"
@@ -848,7 +917,7 @@ install_curated_flatpaks() {
             continue
         fi
         
-        if run_as_user "$install_user" bash -c "run_with_spinner 'Installing $app' $install_cmd_prefix $app"; then
+        if run_as_user "$install_user" bash -c "run_with_spinner 'Installing ${app}' ${install_cmd_prefix} ${app}"; then
             track_result "changed" "Flatpak: installed $app"
         else
             if run_as_user "$install_user" flatpak info "$app" >/dev/null 2>&1; then
