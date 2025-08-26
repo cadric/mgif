@@ -83,11 +83,6 @@ cleanup() {
     [[ -n "$TEMP_DIR" ]] && rm -rf "$TEMP_DIR"
 }
 
-trap cleanup EXIT
-trap 'die "unexpected error at line ${LINENO} (exit code $?)"' ERR
-trap 'die "Interrupted (SIGINT)"' INT
-trap 'die "Terminated (SIGTERM)"' TERM
-
 # Logging functions
 log_debug() { [[ "${DEBUG:-0}" == "1" ]] && printf '[DEBUG] %s\n' "$*"; }
 log_info()  { printf '[INFO ] %s\n' "$*"; }
@@ -99,10 +94,18 @@ setup_logging() {
     local log_dir
     log_dir="$(dirname "$LOG_FILE")"
     
+    # Security: refuse symlink logfiles and create with restrictive perms
+    if [[ -L "$LOG_FILE" ]]; then
+        die "Refusing to write to symlinked log file: $LOG_FILE"
+    fi
+    
     # Create log directory if it doesn't exist
     if [[ ! -d "$log_dir" ]]; then
         mkdir -p "$log_dir" 2>/dev/null || return 1
     fi
+    
+    # Create logfile securely if missing
+    [[ -f "$LOG_FILE" ]] || ( umask 077 && : >"$LOG_FILE" ) || return 1
     
     # Check if log file exists and needs rotation
     if [[ -f "$LOG_FILE" ]]; then
@@ -258,13 +261,13 @@ $(printf '\nDefaults: scope=%s, apps=%s, wallpapers=%s, style=%s, hide-grub=%s\n
 
 Examples:
   # Interactive mode (default)
-  sudo ./$SCRIPT_NAME
+  sudo "./$SCRIPT_NAME"
 
   # Non-interactive with options
-  sudo ./$SCRIPT_NAME --scope system --install-apps yes --style 2
+  sudo "./$SCRIPT_NAME" --scope system --install-apps yes --style 2
 
   # Dry run to see what would happen
-  sudo ./$SCRIPT_NAME --dry-run
+  sudo "./$SCRIPT_NAME" --dry-run
 
 EOF
 }
@@ -431,15 +434,33 @@ run_with_spinner() {
 
 # Safe file editing with backup
 safe_edit_file() {
-    local file="$1"; shift
+    local file="$1"
+    local edit_function="$2"
+    shift 2
+    
     [[ "${DRY_RUN:-0}" == "1" ]] && { log_info "DRY-RUN: would edit file: $file"; return 0; }
-    local backup
-    backup=$(mktemp --tmpdir="$TEMP_DIR" "$(basename "$file").bak.XXXXXX") || return 1
+    
+    # Validate that the edit function is actually a function
+    if ! declare -F "$edit_function" >/dev/null 2>&1; then
+        log_error "safe_edit_file: '$edit_function' is not a valid function"
+        return 1
+    fi
+    
+    # Use the secured $TEMP_DIR if set; otherwise fall back to default tmpdir
+    local tmpopt=(--tmpdir)
+    if [[ -n "$TEMP_DIR" ]]; then
+        tmpopt=(--tmpdir="$TEMP_DIR")
+    fi
+    backup=$(mktemp "${tmpopt[@]}" "$(basename "$file").bak.XXXXXX") || return 1
     cp -a -- "$file" "$backup" || return 1
     # Ensure backup file has secure permissions AFTER copying (cp -a preserves source attributes)
     chmod 600 "$backup" || return 1
     log_debug "Backup of $file at $backup"
-    "$@"; local rc=$?
+    
+    # Call the edit function with the file path and any additional arguments
+    "$edit_function" "$file" "$@"
+    local rc=$?
+    
     if (( rc != 0 )); then
         log_warn "Edit failed for $file; restoring original"
         cp -a -- "$backup" "$file" || log_error "Restore failed; backup at $backup"
@@ -1067,12 +1088,13 @@ install_wallpapers() {
         muted "  org.gnome.desktop.background picture-options = 'zoom'"
         muted "  org.gnome.desktop.screensaver picture-uri = '$dark_uri'"
         
-        local gsettings_cmd="gsettings set org.gnome.desktop.background picture-uri '$light_uri' && \
-gsettings set org.gnome.desktop.background picture-uri-dark '$dark_uri' && \
-gsettings set org.gnome.desktop.background picture-options 'zoom' && \
-gsettings set org.gnome.desktop.screensaver picture-uri '$dark_uri'"
-        
-        if run_as_user_dbus "$user" bash -lc "$gsettings_cmd"; then
+        # Call gsettings with properly separated/escaped arguments (no shell -c)
+        if \
+           run_as_user_dbus "$user" gsettings set org.gnome.desktop.background picture-uri       "$light_uri" && \
+           run_as_user_dbus "$user" gsettings set org.gnome.desktop.background picture-uri-dark "$dark_uri"  && \
+           run_as_user_dbus "$user" gsettings set org.gnome.desktop.background picture-options  "zoom"       && \
+           run_as_user_dbus "$user" gsettings set org.gnome.desktop.screensaver picture-uri     "$dark_uri"
+        then
             track_result "changed" "Wallpapers: applied for current session"
             log_info "GNOME background keys configured for user $user"
             log_info "  picture-uri: $light_uri"
@@ -1265,7 +1287,7 @@ enable_services() {
         return 0
     fi
     
-    if systemctl list-unit-files --type=service --no-legend | grep -q '^NetworkManager\.service'; then
+    if LC_ALL=C systemctl list-unit-files --type=service --no-legend | grep -q '^NetworkManager\.service$'; then
         systemctl enable --now NetworkManager || warning "Could not enable NetworkManager."
     fi
     
@@ -1286,6 +1308,28 @@ _update_or_add_line() {
     sed -i "/^${key}=/h; /^${key}=/d; \${x; /^${key}=/p;}" "$file"
 }
 
+# GRUB configuration edit function
+_edit_grub_config() {
+    local grub_file="$1"
+    
+    # Helper function to update or add configuration lines
+    update_line() {
+        local file="$1"
+        local key="$2" 
+        local value="$3"
+        if grep -q "^${key}=" "$file"; then
+            sed -i "s|^${key}=.*|${key}=${value}|" "$file" || return 1
+        else
+            echo "${key}=${value}" >> "$file" || return 1
+        fi
+    }
+    
+    # Update GRUB configuration parameters - fail on any error
+    update_line "$grub_file" "GRUB_TIMEOUT_STYLE" "hidden" || return 1
+    update_line "$grub_file" "GRUB_TIMEOUT" "0" || return 1
+    update_line "$grub_file" "GRUB_RECORDFAIL_TIMEOUT" "0" || return 1
+}
+
 # GRUB configuration
 configure_grub() {
     if [[ "${USER_HIDE_GRUB:-no}" != "yes" ]]; then
@@ -1304,24 +1348,7 @@ configure_grub() {
     local grub_file="/etc/default/grub"
     touch "$grub_file"
     
-    safe_edit_file "$grub_file" bash -c '
-        # Define helper function in subshell
-        _update_or_add_line() {
-            local file="$1"
-            local key="$2" 
-            local value="$3"
-            if grep -q "^${key}=" "$file"; then
-                sed -i "s|^${key}=.*|${key}=${value}|" "$file"
-            else
-                echo "${key}=${value}" >> "$file"
-            fi
-        }
-        
-        # Update GRUB configuration parameters
-        _update_or_add_line "$0" "GRUB_TIMEOUT_STYLE" "hidden"
-        _update_or_add_line "$0" "GRUB_TIMEOUT" "0"
-        _update_or_add_line "$0" "GRUB_RECORDFAIL_TIMEOUT" "0"
-    ' "$grub_file"
+    safe_edit_file "$grub_file" _edit_grub_config
     
     status_ok "GRUB default file updated: $grub_file"
     
@@ -1510,11 +1537,19 @@ parse_arguments() {
 
 # Main function
 main() {
-    # Initialize
+    # Initialize colors first
     init_colors
+    
+    # Create temp directory and immediately set up traps to ensure cleanup
     TEMP_DIR=$(mktemp -d)
     # Ensure temp directory has secure permissions
     chmod 700 "$TEMP_DIR" || die "Could not secure temporary directory"
+    
+    # Set up traps immediately after TEMP_DIR is assigned to prevent race condition
+    trap cleanup EXIT
+    trap 'die "unexpected error at line ${LINENO} (exit code $?)"' ERR
+    trap 'die "Interrupted (SIGINT)"' INT
+    trap 'die "Terminated (SIGTERM)"' TERM
     
     # Parse command line
     parse_arguments "$@"
