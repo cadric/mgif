@@ -3,8 +3,8 @@ set -Eeuo pipefail
 IFS=$'\n\t'
 
 readonly SCRIPT_NAME="$(basename "$0")"
-readonly SCRIPT_VERSION="18.0.0"
-readonly LOG_FILE="${LOG_FILE:-/var/log/mfgi-setup.log}"
+readonly SCRIPT_VERSION="1.0.0"
+readonly LOG_FILE="${LOG_FILE:-/var/log/ifg-setup.log}"
 readonly LOG_MAX_SIZE="${LOG_MAX_SIZE:-10485760}"  # 10MB default
 readonly LOG_KEEP_ROTATED="${LOG_KEEP_ROTATED:-3}"  # Keep 3 rotated logs
 readonly NO_EMOJI="${NO_EMOJI:-0}"
@@ -242,13 +242,13 @@ Options:
   -h, --help                    Show this help message
 
 Environment Variables:
-  MFGI_FORCE_SCOPE     Override flatpak scope (system|user)
-  MFGI_INSTALL_APPS    Override app installation (yes|no)
-  MFGI_SKIP_GRUB       Override GRUB configuration (yes|no)
-  MFGI_STYLE           Override extension style (1-3)
-  MFGI_INSTALL_WALLPAPERS Override wallpaper installation (yes|no)
-  MFGI_FLATHUB_SUBSET  Use verified subset of Flathub (verified|full)
-  LOG_FILE             Log file location (default: /var/log/mfgi-setup.log)
+  IFG_FORCE_SCOPE     Override flatpak scope (system|user)
+  IFG_INSTALL_APPS    Override app installation (yes|no)
+  IFG_SKIP_GRUB       Override GRUB configuration (yes|no)
+  IFG_STYLE           Override extension style (1-3)
+  IFG_INSTALL_WALLPAPERS Override wallpaper installation (yes|no)
+  IFG_FLATHUB_SUBSET  Use verified subset of Flathub (verified|full)
+  LOG_FILE             Log file location (default: /var/log/ifg-setup.log)
   LOG_MAX_SIZE         Max log size before rotation (default: 10MB)
   LOG_KEEP_ROTATED     Number of rotated logs to keep (default: 3)
   DEBUG                Enable debug logging (0|1)
@@ -256,8 +256,8 @@ Environment Variables:
   NO_EMOJI             Disable emoji output (0|1)
 
 $(printf '\nDefaults: scope=%s, apps=%s, wallpapers=%s, style=%s, hide-grub=%s\n' \
-  "${MFGI_FORCE_SCOPE:-user}" "${MFGI_INSTALL_APPS:-no}" \
-  "${MFGI_INSTALL_WALLPAPERS:-no}" "${MFGI_STYLE:-1}" "${MFGI_SKIP_GRUB:-no}")
+  "${IFG_FORCE_SCOPE:-user}" "${IFG_INSTALL_APPS:-no}" \
+  "${IFG_INSTALL_WALLPAPERS:-no}" "${IFG_STYLE:-1}" "${IFG_SKIP_GRUB:-no}")
 
 Examples:
   # Interactive mode (default)
@@ -786,8 +786,8 @@ EOF
     local hide_grub_choice="no"
     
     # Override from environment if set
-    if [[ -n "${MFGI_FORCE_SCOPE:-}" ]]; then
-        case "$MFGI_FORCE_SCOPE" in
+    if [[ -n "${IFG_FORCE_SCOPE:-}" ]]; then
+        case "$IFG_FORCE_SCOPE" in
             system) scope_choice="1" ;;
             user) scope_choice="2" ;;
         esac
@@ -799,23 +799,23 @@ EOF
                        "For the current user only (recommended for single-user systems)")"
     fi
     
-    if [[ -n "${MFGI_INSTALL_APPS:-}" ]]; then
-        install_apps_choice="${MFGI_INSTALL_APPS,,}"
+    if [[ -n "${IFG_INSTALL_APPS:-}" ]]; then
+        install_apps_choice="${IFG_INSTALL_APPS,,}"
     else
         hint "Install a curated set of useful GNOME and essential applications?"
         muted "• Includes: Calculator, Text Editor, Image Viewer, Music Player, Firefox, and Extension Manager."
         install_apps_choice="$(ask_yesno "Install this recommended app bundle?" "n")"
     fi
     
-    if [[ -n "${MFGI_INSTALL_WALLPAPERS:-}" ]]; then
-        install_wallpapers_choice="${MFGI_INSTALL_WALLPAPERS,,}"
+    if [[ -n "${IFG_INSTALL_WALLPAPERS:-}" ]]; then
+        install_wallpapers_choice="${IFG_INSTALL_WALLPAPERS,,}"
     else
         hint "Install a custom wallpaper set that supports both light and dark modes?"
         install_wallpapers_choice="$(ask_yesno "Set up these custom wallpapers?" "n")"
     fi
     
-    if [[ -n "${MFGI_STYLE:-}" ]]; then
-        extension_style_choice="$MFGI_STYLE"
+    if [[ -n "${IFG_STYLE:-}" ]]; then
+        extension_style_choice="$IFG_STYLE"
     else
         extension_style_choice="$(ask_choice "Which style (extensions) do you want installed and enabled:" 1 \
                        "GNOME Default (No extensions)" \
@@ -823,8 +823,8 @@ EOF
                        "macOS style (Dash to Dock + Tray Icons)")"
     fi
     
-    if [[ -n "${MFGI_SKIP_GRUB:-}" ]]; then
-        hide_grub_choice="${MFGI_SKIP_GRUB,,}"
+    if [[ -n "${IFG_SKIP_GRUB:-}" ]]; then
+        hide_grub_choice="${IFG_SKIP_GRUB,,}"
     else
         hide_grub_choice="$(ask_yesno "Do you wish to hide GRUB and boot directly to GNOME?" "n")"
     fi
@@ -1137,7 +1137,7 @@ install_wallpapers() {
     
     subhead "Installing custom wallpapers..."
     
-    local wallpaper_dir="${MFGI_WALL_DIR:-/usr/share/backgrounds/mfgi}"
+    local wallpaper_dir="${IFG_WALL_DIR:-/usr/share/backgrounds/ifg}"
     local light_wallpaper="$wallpaper_dir/light.png"
     local dark_wallpaper="$wallpaper_dir/dark.png"
     local have_light=0
@@ -1152,8 +1152,8 @@ install_wallpapers() {
     mkdir -p "$wallpaper_dir"
     
     # Try to get wallpapers from base64 environment variables first
-    if [[ -n "${MFGI_WALL_LIGHT_B64:-}" ]]; then
-        if write_png_from_base64 "$MFGI_WALL_LIGHT_B64" "$light_wallpaper"; then
+    if [[ -n "${IFG_WALL_LIGHT_B64:-}" ]]; then
+        if write_png_from_base64 "$IFG_WALL_LIGHT_B64" "$light_wallpaper"; then
             have_light=1
             status_ok "Light wallpaper written from base64 data"
         else
@@ -1161,8 +1161,8 @@ install_wallpapers() {
         fi
     fi
     
-    if [[ -n "${MFGI_WALL_DARK_B64:-}" ]]; then
-        if write_png_from_base64 "$MFGI_WALL_DARK_B64" "$dark_wallpaper"; then
+    if [[ -n "${IFG_WALL_DARK_B64:-}" ]]; then
+        if write_png_from_base64 "$IFG_WALL_DARK_B64" "$dark_wallpaper"; then
             have_dark=1
             status_ok "Dark wallpaper written from base64 data"
         else
@@ -1175,13 +1175,13 @@ install_wallpapers() {
         if check_network; then
             muted "Fetching missing wallpapers from the web..."
             if (( ! have_light )); then
-                if fetch_png_from_url "https://arcanes.dk/mfgi/light.png" "$light_wallpaper"; then
+                if fetch_png_from_url "https://arcanes.dk/ifg/light.png" "$light_wallpaper"; then
                     have_light=1
                     status_ok "Light wallpaper downloaded"
                 fi
             fi
             if (( ! have_dark )); then
-                if fetch_png_from_url "https://arcanes.dk/mfgi/dark.png" "$dark_wallpaper"; then
+                if fetch_png_from_url "https://arcanes.dk/ifg/dark.png" "$dark_wallpaper"; then
                     have_dark=1
                     status_ok "Dark wallpaper downloaded"
                 fi
@@ -1249,11 +1249,11 @@ install_wallpapers() {
     fi
     
     # Set up vendor defaults for new users (optional)
-    if [[ "${MFGI_WALL_VENDOR_DEFAULTS:-0}" == "1" ]]; then
+    if [[ "${IFG_WALL_VENDOR_DEFAULTS:-0}" == "1" ]]; then
         muted "Writing vendor defaults (dconf) for new users..."
         mkdir -p /etc/dconf/db/local.d /etc/dconf/profile
         
-        cat >/etc/dconf/db/local.d/30-mfgi-wallpaper <<EOF
+        cat >/etc/dconf/db/local.d/30-ifg-wallpaper <<EOF
 [org/gnome/desktop/background]
 picture-uri='file://$light_wallpaper'
 picture-uri-dark='file://$dark_wallpaper'
@@ -1544,11 +1544,11 @@ run_installation() {
 # Argument parsing
 parse_arguments() {
     local dry_run=0
-    local scope="${MFGI_FORCE_SCOPE:-user}"
-    local install_apps="${MFGI_INSTALL_APPS:-no}"
-    local install_wallpapers="${MFGI_INSTALL_WALLPAPERS:-no}"
-    local extension_style="${MFGI_STYLE:-1}"
-    local hide_grub="${MFGI_SKIP_GRUB:-no}"
+    local scope="${IFG_FORCE_SCOPE:-user}"
+    local install_apps="${IFG_INSTALL_APPS:-no}"
+    local install_wallpapers="${IFG_INSTALL_WALLPAPERS:-no}"
+    local extension_style="${IFG_STYLE:-1}"
+    local hide_grub="${IFG_SKIP_GRUB:-no}"
     local has_args=0
     
     while [[ $# -gt 0 ]]; do
@@ -1723,11 +1723,11 @@ main() {
     # Final message
     if (( ${#FAILED_ITEMS[@]} > 0 )); then
         printf '\n'
-        warning "mfgi v18 installation completed with ${#FAILED_ITEMS[@]} failure(s). $(emoji "🤔")"
+        warning "ifg v1 installation completed with ${#FAILED_ITEMS[@]} failure(s). $(emoji "🤔")"
         status_fail "Please review the summary and log file for details."
     else
         printf '\n'
-        headline "mfgi v18 installation completed! $(emoji "🎉")"
+        headline "ifg v1 installation completed! $(emoji "🎉")"
         status_ok "The system is now configured. A reboot is required to see all changes."
     fi
     
