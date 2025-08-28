@@ -12,8 +12,6 @@
 # Requires: Bash 5.0+
 #
 
-# REVIEW: Implementeret "set -Eeuo pipefail" og tidlig, minimal ERR-trap som
-# anbefalet i reviewens punkt 3.3 og i copilot-instructions.md.
 set -Eeuo pipefail
 IFS=$'\n\t'
 trap 'printf "FATAL: Unhandled error (exit code %s) on line %s of %s\n" "$?" "$LINENO" "$0" >&2' ERR
@@ -23,14 +21,11 @@ trap 'printf "FATAL: Unhandled error (exit code %s) on line %s of %s\n" "$?" "$L
 # =========================================================================
 
 readonly SCRIPT_NAME="$(basename "$0")"
-readonly SCRIPT_VERSION="2.0.0" # Version bumped to reflect major hardening
+readonly SCRIPT_VERSION="2.0.1" # Version bumped to reflect major hardening
 readonly LOG_FILE="${IFG_LOG_FILE:-/var/log/ifg-setup.log}"
 readonly LOG_MAX_SIZE="${IFG_LOG_MAX_SIZE:-10485760}"  # 10MB
 readonly LOG_KEEP_ROTATED="${IFG_LOG_KEEP_ROTATED:-3}" # Keep 3 rotated logs
 
-# REVIEW: Implementeret checksum-verifikation for downloads som anbefalet i
-# reviewens punkt 3.4. Brugeren skal erstatte disse placeholder-værdier.
-# Kilde: Best practice for at sikre integriteten af downloadede filer.
 readonly WALLPAPER_LIGHT_URL="https://ifg.sh/light.png"
 readonly WALLPAPER_DARK_URL="https://ifg.sh/dark.png"
 readonly WALLPAPER_LIGHT_SHA256="6bd25a6adc86e42ae2f8e99984158ae1776f836693c9d8e22527882ad7b74231"
@@ -128,8 +123,6 @@ cleanup() {
 }
 
 # --- Logging & Error Handling ---
-# REVIEW: Implementeret forbedret logging og error handling fra review og
-# copilot-instructions.md. `on_error` kaldes af den opgraderede trap.
 log_generic() {
     local level="$1"; shift
     # Prepender timestamp i ISO 8601 format
@@ -556,8 +549,6 @@ check_user_bus_readiness() {
 # Updated Flatpak functions
 # These functions now use the correct D-Bus-aware helper.
 
-# REVIEW: Implementeret den mere robuste `ensure_flathub_remote` fra reviewens
-# punkt 3.5. Den kan nu rette en forkert URL på en eksisterende remote.
 ensure_flathub(){
     local scope="$1"; shift || true
     local args=(); [[ "$scope" == user ]] && args+=(--user) || args+=(--system)
@@ -1190,7 +1181,6 @@ install_curated_flatpaks() {
 
 
 # Wallpaper installation
-# REVIEW: Implementeret checksum-verifikation for downloads fra review punkt 3.4.
 sha256_ok() {
     local file="$1" expected="$2"
     have sha256sum || { log_warn "sha256sum command not found, cannot verify file integrity."; return 1; }
@@ -2016,8 +2006,6 @@ print_configuration_summary() {
 }
 
 # --- System Guards ---
-# REVIEW: Implementeret tidlige guards for root, OS og desktop-miljø som
-# anbefalet i reviewens punkt 3.1 og 3.7.
 require_root() {
     [[ "${DRY_RUN:-0}" == "1" ]] && return 0
     (( EUID == 0 )) || die "This script must be run as root. Use 'sudo' or a root shell."
@@ -2034,8 +2022,6 @@ require_gnome() {
     # Yderligere tjek kunne være `loginctl show-session -p Type` for at finde en Wayland/X11 session
 }
 
-# REVIEW: Implementeret fallback til stdin for `ask_*` funktioner som
-# anbefalet i reviewens punkt 3.6 for at forbedre CI/container-kompatibilitet.
 read_from_tty_or_stdin() {
     local -n var_ref=$1
     if [[ -t 0 ]]; then # Check if stdin is a TTY
@@ -2052,8 +2038,6 @@ read_from_tty_or_stdin() {
 main() {
     init_colors
 
-    # REVIEW: Opgraderet trap-håndtering som foreslået i review punkt 3.3.
-    # Den simple trap fanger fejl før den fulde `cleanup` er klar.
     TEMP_DIR=$(mktemp -d)
     chmod 700 "$TEMP_DIR" || die "Could not secure temporary directory: $TEMP_DIR"
     trap cleanup EXIT
@@ -2063,7 +2047,6 @@ main() {
 
     parse_arguments "$@"
 
-    # REVIEW: Implementeret tidlig, ikke-TTY-afhængig logging fra review punkt 3.2.
     if setup_logging; then
         # Omdiriger stdout/stderr til både terminal og logfil.
         exec > >(tee -a "$LOG_FILE") 2> >(tee -a "$LOG_FILE" >&2)
@@ -2072,7 +2055,6 @@ main() {
         log_warn "Could not set up logging to $LOG_FILE. Continuing without file logging."
     fi
 
-    # REVIEW: Implementeret tidlige guards for systemkrav fra review punkt 3.1/3.7.
     headline "Verifying System Prerequisites"
     require_root
     require_fedora
@@ -2158,42 +2140,3 @@ main() {
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     main "$@"
 fi
-
-#
-# REVIEW IMPLEMENTATION SUMMARY:
-# ===============================
-# This script has been enhanced with the following security and modernization improvements:
-#
-# 1. Enhanced Error Handling (3.3):
-#    - Implemented "set -Eeuo pipefail" for strict error handling
-#    - Added comprehensive trap handling with on_error() function
-#    - Improved cleanup() with proper exit code handling
-#
-# 2. Improved Logging (3.2):
-#    - ISO 8601 timestamp format in log_generic()
-#    - Enhanced non-TTY dependent logging setup
-#    - Better log rotation and file management
-#
-# 3. System Guards (3.1, 3.7):
-#    - Added require_root(), require_fedora(), require_gnome()
-#    - Early validation of system prerequisites
-#    - Proper OS and environment detection
-#
-# 4. Secure Downloads (3.4):
-#    - Implemented checksum verification with sha256_ok()
-#    - Added fetch_file_checked() for secure wallpaper downloads
-#    - Configurable SHA256 checksums for download integrity
-#
-# 5. Robust Flathub Configuration (3.5):
-#    - Enhanced ensure_flathub() with URL verification and correction
-#    - Better error handling for remote configuration
-#    - Improved remote-info validation logic
-#
-# 6. Better CI/Container Support (3.6):
-#    - Added read_from_tty_or_stdin() for improved TTY handling
-#    - Enhanced ask_yesno() with fallback mechanisms
-#    - Better non-interactive mode support
-#
-# Version 2.0.0 represents a major security and robustness upgrade
-# while maintaining backward compatibility with existing functionality.
-#
