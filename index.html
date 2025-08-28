@@ -1,32 +1,171 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+<head>
     <meta charset="utf-8">
-    <title>Install Fedora Gnome</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="script.js"></script>
-  </head>
-  <body>
-  <h1>  Install Fedora Gnome </h1>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Install Fedora GNOME</title>
+    <meta name="description" content="A minimal Fedora GNOME installer with interactive setup">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Progress indicator at top -->
+    <div class="progress-container">
+        <div class="progress-bar">
+            <div class="progress-fill"></div>
+        </div>
+        <div class="collected-steps">
+            <!-- Steps will be collected here as user scrolls -->
+        </div>
+    </div>
 
-An easy script to Install a Minimal Version of Fedora and Gnome.
-Install a small curated selection of flatpak apps to get started with
-Decide if you want a pure Gnome experince, get a windows style look or macOS look for your desktop.
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1 class="title">Install Fedora GNOME</h1>
+            <p class="subtitle">A minimal, elegant installation script</p>
+            <div class="scroll-indicator">
+                <div class="scroll-arrow"></div>
+            </div>
+        </div>
+    </section>
 
-Download and install Fedora Everything from: https://fedoraproject.org/everything/download
- -Create a user with password and where you want fedora installed.
- -Do not select additional software.
- -Reboot into cli
+    <!-- Introduction Section -->
+    <section class="section intro-section" data-step="intro">
+        <div class="container">
+            <div class="step-content">
+                <h2>Minimal Fedora GNOME Setup</h2>
+                <p>An easy script to install a minimal version of Fedora with GNOME desktop environment. Install a small curated selection of flatpak apps to get started with and decide if you want a pure GNOME experience, Windows-style look, or macOS appearance for your desktop.</p>
+            </div>
+        </div>
+        <div class="scroll-indicator step-scroll-indicator">
+            <div class="scroll-arrow"></div>
+        </div>
+    </section>
 
-Login with your user and type:
-sudo su -
+    <!-- Step 1: Download -->
+    <section class="section" data-step="1">
+        <div class="container">
+            <div class="step-header">
+                <span class="step-number">01</span>
+                <h2>Download Fedora Everything</h2>
+            </div>
+            <div class="step-content">
+                <p>Download and install Fedora Everything from the official website:</p>
+                <div class="code-block">
+                    <a href="https://fedoraproject.org/everything/download" target="_blank" rel="noopener">
+                        https://fedoraproject.org/everything/download
+                    </a>
+                </div>
+                <ul class="step-list">
+                    <li>Create a user with password and select where you want Fedora installed</li>
+                    <li>Do not select additional software during installation</li>
+                    <li>Reboot into CLI (command line interface)</li>
+                </ul>
+            </div>
+        </div>
+        <div class="scroll-indicator step-scroll-indicator">
+            <div class="scroll-arrow"></div>
+        </div>
+    </section>
 
-Then type:
-bash <(curl -fsSL ifg.sh)
+    <!-- Step 2: Login -->
+    <section class="section" data-step="2">
+        <div class="container">
+            <div class="step-header">
+                <span class="step-number">02</span>
+                <h2>Login and Switch to Root</h2>
+            </div>
+            <div class="step-content">
+                <p>Login with your user account and switch to root privileges:</p>
+                <div class="code-block">
+                    <code>sudo su -</code>
+                </div>
+            </div>
+        </div>
+        <div class="scroll-indicator step-scroll-indicator">
+            <div class="scroll-arrow"></div>
+        </div>
+    </section>
 
-Answer the questions the script have for you and let it do its magic!
+    <!-- Step 3: Run Script -->
+    <section class="section" data-step="3">
+        <div class="container">
+            <div class="step-header">
+                <span class="step-number">03</span>
+                <h2>Execute the Installation Script</h2>
+            </div>
+            <div class="step-content">
+                <p>Run the automated installation script:</p>
+                <div class="code-block">
+                    <code>bash &lt;(curl -fsSL ifg.sh)</code>
+                </div>
+                <p class="note">The script will ask you configuration questions to customize your installation.</p>
+            </div>
+        </div>
+        <div class="scroll-indicator step-scroll-indicator">
+            <div class="scroll-arrow"></div>
+        </div>
+    </section>
 
-Reboot into your new Minimal Fedora Gnome desktop
-  </body>
+    <!-- Step 4: Configure -->
+    <section class="section" data-step="4">
+        <div class="container">
+            <div class="step-header">
+                <span class="step-number">04</span>
+                <h2>Answer Configuration Questions</h2>
+            </div>
+            <div class="step-content">
+                <p>The script will prompt you for your preferences:</p>
+                <ul class="step-list">
+                    <li><strong>Installation scope:</strong> System-wide or user-specific apps</li>
+                    <li><strong>App bundle:</strong> Install curated applications</li>
+                    <li><strong>Wallpapers:</strong> Install beautiful desktop backgrounds</li>
+                    <li><strong>Desktop style:</strong> Pure GNOME, Windows-like, or macOS-style</li>
+                    <li><strong>GRUB menu:</strong> Hide or show boot menu</li>
+                </ul>
+            </div>
+        </div>
+        <div class="scroll-indicator step-scroll-indicator">
+            <div class="scroll-arrow"></div>
+        </div>
+    </section>
+
+    <!-- Step 5: Complete -->
+    <section class="section final-section" data-step="5">
+        <div class="container">
+            <div class="step-header">
+                <span class="step-number">05</span>
+                <h2>Enjoy Your New Desktop</h2>
+            </div>
+            <div class="step-content">
+                <p>Let the script work its magic and then reboot into your new minimal Fedora GNOME desktop!</p>
+                <div class="features">
+                    <div class="feature">
+                        <h3>🎨 Customizable</h3>
+                        <p>Choose your preferred desktop style</p>
+                    </div>
+                    <div class="feature">
+                        <h3>⚡ Minimal</h3>
+                        <p>Only essential packages installed</p>
+                    </div>
+                    <div class="feature">
+                        <h3>🔒 Secure</h3>
+                        <p>Latest Fedora with security updates</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 MIT No Attribution License</p>
+            <p>Made with ❤️ for the Fedora community</p>
+        </div>
+    </footer>
+
+    <script src="js/script.js"></script>
+</body>
 </html>
 
