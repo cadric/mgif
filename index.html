@@ -3,169 +3,282 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Install Fedora GNOME</title>
-    <meta name="description" content="A minimal Fedora GNOME installer with interactive setup">
+    <meta name="color-scheme" content="dark light">
+    <meta name="theme-color" content="#0a0a0a">
+    
+    <!-- Primary Meta Tags -->
+    <title>Install Fedora GNOME - Minimal Setup Guide</title>
+    <meta name="title" content="Install Fedora GNOME - Minimal Setup Guide">
+    <meta name="description" content="A minimal, elegant Fedora GNOME installation script with interactive setup. Choose your desktop style: pure GNOME, Windows-like, or macOS appearance.">
+    <meta name="keywords" content="Fedora, GNOME, Linux, installation, minimal, desktop environment, setup">
+    <meta name="author" content="Cadric">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="">
+    <meta property="og:title" content="Install Fedora GNOME - Minimal Setup Guide">
+    <meta property="og:description" content="A minimal, elegant Fedora GNOME installation script with interactive setup. Choose your desktop style: pure GNOME, Windows-like, or macOS appearance.">
+    <meta property="og:image" content="">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="">
+    <meta property="twitter:title" content="Install Fedora GNOME - Minimal Setup Guide">
+    <meta property="twitter:description" content="A minimal, elegant Fedora GNOME installation script with interactive setup. Choose your desktop style: pure GNOME, Windows-like, or macOS appearance.">
+    <meta property="twitter:image" content="">
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="css/style.css" as="style">
+    <link rel="preload" href="js/script.js" as="script">
+    
+    <!-- Styles -->
     <link rel="stylesheet" href="css/style.css">
+    
+    <!-- Favicon and App Icons -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🐧</text></svg>">
+    
+    <!-- Security -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' https:; img-src 'self' data: https:;">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
 </head>
 <body>
+    <!-- Skip to main content for accessibility -->
+    <a href="#main-content" class="skip-link sr-only">Skip to main content</a>
+
     <!-- Progress indicator at top -->
-    <div class="progress-container">
-        <div class="progress-bar">
+    <header class="progress-container" role="banner" aria-label="Installation progress">
+        <div class="progress-bar" role="progressbar" aria-label="Page scroll progress" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
             <div class="progress-fill"></div>
         </div>
-        <div class="collected-steps">
+        <nav class="collected-steps" aria-label="Completed steps navigation" role="navigation">
             <!-- Steps will be collected here as user scrolls -->
-        </div>
-    </div>
+        </nav>
+    </header>
 
-    <!-- Hero Section -->
-    <section class="hero">
-        <div class="hero-content">
-            <h1 class="title">Install Fedora GNOME</h1>
-            <p class="subtitle">A minimal, elegant installation script</p>
-            <div class="scroll-indicator">
-                <div class="scroll-arrow"></div>
+    <!-- Main content -->
+    <main id="main-content" role="main">
+        <!-- Hero Section -->
+        <section class="hero" aria-labelledby="hero-title">
+            <div class="hero-content">
+                <h1 id="hero-title" class="title">Install Fedora GNOME</h1>
+                <p class="subtitle">A minimal, elegant installation script</p>
+                <button class="scroll-indicator" aria-label="Scroll down to start installation guide" type="button">
+                    <div class="scroll-arrow" aria-hidden="true"></div>
+                    <span class="sr-only">Continue to installation guide</span>
+                </button>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- Introduction Section -->
-    <section class="section intro-section" data-step="intro">
-        <div class="container">
-            <div class="step-content">
-                <h2>Minimal Fedora GNOME Setup</h2>
-                <p>An easy script to install a minimal version of Fedora with GNOME desktop environment. Install a small curated selection of flatpak apps to get started with and decide if you want a pure GNOME experience, Windows-style look, or macOS appearance for your desktop.</p>
+        <!-- Introduction Section -->
+        <article class="section intro-section" data-step="intro" id="introduction">
+            <div class="container">
+                <header class="step-content">
+                    <h2>Minimal Fedora GNOME Setup</h2>
+                    <p>An easy script to install a minimal version of Fedora with GNOME desktop environment. Install a small curated selection of flatpak apps to get started with and decide if you want a pure GNOME experience, Windows-style look, or macOS appearance for your desktop.</p>
+                </header>
             </div>
-        </div>
-        <div class="scroll-indicator step-scroll-indicator">
-            <div class="scroll-arrow"></div>
-        </div>
-    </section>
+            <button class="scroll-indicator step-scroll-indicator" aria-label="Continue to step 1" type="button">
+                <div class="scroll-arrow" aria-hidden="true"></div>
+                <span class="sr-only">Next: Download Fedora</span>
+            </button>
+        </article>
 
-    <!-- Step 1: Download -->
-    <section class="section" data-step="1">
-        <div class="container">
-            <div class="step-header">
-                <span class="step-number">01</span>
-                <h2>Download Fedora Everything</h2>
-            </div>
-            <div class="step-content">
-                <p>Download and install Fedora Everything from the official website:</p>
-                <div class="code-block">
-                    <a href="https://fedoraproject.org/everything/download" target="_blank" rel="noopener">
-                        https://fedoraproject.org/everything/download
-                    </a>
-                </div>
-                <ul class="step-list">
-                    <li>Create a user with password and select where you want Fedora installed</li>
-                    <li>Do not select additional software during installation</li>
-                    <li>Reboot into CLI (command line interface)</li>
-                </ul>
-            </div>
-        </div>
-        <div class="scroll-indicator step-scroll-indicator">
-            <div class="scroll-arrow"></div>
-        </div>
-    </section>
-
-    <!-- Step 2: Login -->
-    <section class="section" data-step="2">
-        <div class="container">
-            <div class="step-header">
-                <span class="step-number">02</span>
-                <h2>Login and Switch to Root</h2>
-            </div>
-            <div class="step-content">
-                <p>Login with your user account and switch to root privileges:</p>
-                <div class="code-block">
-                    <code>sudo su -</code>
-                </div>
-            </div>
-        </div>
-        <div class="scroll-indicator step-scroll-indicator">
-            <div class="scroll-arrow"></div>
-        </div>
-    </section>
-
-    <!-- Step 3: Run Script -->
-    <section class="section" data-step="3">
-        <div class="container">
-            <div class="step-header">
-                <span class="step-number">03</span>
-                <h2>Execute the Installation Script</h2>
-            </div>
-            <div class="step-content">
-                <p>Run the automated installation script:</p>
-                <div class="code-block">
-                    <code>bash &lt;(curl -fsSL ifg.sh)</code>
-                </div>
-                <p class="note">The script will ask you configuration questions to customize your installation.</p>
-            </div>
-        </div>
-        <div class="scroll-indicator step-scroll-indicator">
-            <div class="scroll-arrow"></div>
-        </div>
-    </section>
-
-    <!-- Step 4: Configure -->
-    <section class="section" data-step="4">
-        <div class="container">
-            <div class="step-header">
-                <span class="step-number">04</span>
-                <h2>Answer Configuration Questions</h2>
-            </div>
-            <div class="step-content">
-                <p>The script will prompt you for your preferences:</p>
-                <ul class="step-list">
-                    <li><strong>Installation scope:</strong> System-wide or user-specific apps</li>
-                    <li><strong>App bundle:</strong> Install curated applications</li>
-                    <li><strong>Wallpapers:</strong> Install beautiful desktop backgrounds</li>
-                    <li><strong>Desktop style:</strong> Pure GNOME, Windows-like, or macOS-style</li>
-                    <li><strong>GRUB menu:</strong> Hide or show boot menu</li>
-                </ul>
-            </div>
-        </div>
-        <div class="scroll-indicator step-scroll-indicator">
-            <div class="scroll-arrow"></div>
-        </div>
-    </section>
-
-    <!-- Step 5: Complete -->
-    <section class="section final-section" data-step="5">
-        <div class="container">
-            <div class="step-header">
-                <span class="step-number">05</span>
-                <h2>Enjoy Your New Desktop</h2>
-            </div>
-            <div class="step-content">
-                <p>Let the script work its magic and then reboot into your new minimal Fedora GNOME desktop!</p>
-                <div class="features">
-                    <div class="feature">
-                        <h3>🎨 Customizable</h3>
-                        <p>Choose your preferred desktop style</p>
+        <!-- Step 1: Download -->
+        <article class="section" data-step="1" id="step-1">
+            <div class="container">
+                <header class="step-header">
+                    <span class="step-number" aria-label="Step 1">01</span>
+                    <h2>Download Fedora Everything</h2>
+                </header>
+                <div class="step-content">
+                    <p>Download and install Fedora Everything from the official website:</p>
+                    <div class="code-block" role="region" aria-label="Download link">
+                        <a href="https://fedoraproject.org/everything/download" target="_blank" rel="noopener noreferrer">
+                            https://fedoraproject.org/everything/download
+                        </a>
                     </div>
-                    <div class="feature">
-                        <h3>⚡ Minimal</h3>
-                        <p>Only essential packages installed</p>
-                    </div>
-                    <div class="feature">
-                        <h3>🔒 Secure</h3>
-                        <p>Latest Fedora with security updates</p>
+                    <ul class="step-list" role="list">
+                        <li role="listitem">Create a user with password and select where you want Fedora installed</li>
+                        <li role="listitem">Do not select additional software during installation</li>
+                        <li role="listitem">Reboot into CLI (command line interface)</li>
+                    </ul>
+                </div>
+            </div>
+            <button class="scroll-indicator step-scroll-indicator" aria-label="Continue to step 2" type="button">
+                <div class="scroll-arrow" aria-hidden="true"></div>
+                <span class="sr-only">Next: Login as Root</span>
+            </button>
+        </article>
+
+        <!-- Step 2: Login -->
+        <article class="section" data-step="2" id="step-2">
+            <div class="container">
+                <header class="step-header">
+                    <span class="step-number" aria-label="Step 2">02</span>
+                    <h2>Login and Switch to Root</h2>
+                </header>
+                <div class="step-content">
+                    <p>Login with your user account and switch to root privileges:</p>
+                    <div class="code-block" role="region" aria-label="Terminal command">
+                        <code>sudo su -</code>
                     </div>
                 </div>
             </div>
-        </div>
-    </section>
+            <button class="scroll-indicator step-scroll-indicator" aria-label="Continue to step 3" type="button">
+                <div class="scroll-arrow" aria-hidden="true"></div>
+                <span class="sr-only">Next: Run Script</span>
+            </button>
+        </article>
+
+        <!-- Step 3: Run Script -->
+        <article class="section" data-step="3" id="step-3">
+            <div class="container">
+                <header class="step-header">
+                    <span class="step-number" aria-label="Step 3">03</span>
+                    <h2>Execute the Installation Script</h2>
+                </header>
+                <div class="step-content">
+                    <p>Run the automated installation script:</p>
+                    <div class="code-block" role="region" aria-label="Installation command">
+                        <code>bash &lt;(curl -fsSL ifg.sh)</code>
+                    </div>
+                    <aside class="note" role="note" aria-label="Important information">
+                        <p>The script will ask you configuration questions to customize your installation.</p>
+                    </aside>
+                </div>
+            </div>
+            <button class="scroll-indicator step-scroll-indicator" aria-label="Continue to step 4" type="button">
+                <div class="scroll-arrow" aria-hidden="true"></div>
+                <span class="sr-only">Next: Configure</span>
+            </button>
+        </article>
+
+        <!-- Step 4: Configure -->
+        <article class="section" data-step="4" id="step-4">
+            <div class="container">
+                <header class="step-header">
+                    <span class="step-number" aria-label="Step 4">04</span>
+                    <h2>Answer Configuration Questions</h2>
+                </header>
+                <div class="step-content">
+                    <p>The script will prompt you for your preferences:</p>
+                    <ul class="step-list" role="list">
+                        <li role="listitem"><strong>Installation scope:</strong> System-wide or user-specific apps</li>
+                        <li role="listitem"><strong>App bundle:</strong> Install curated applications</li>
+                        <li role="listitem"><strong>Wallpapers:</strong> Install beautiful desktop backgrounds</li>
+                        <li role="listitem"><strong>Desktop style:</strong> Pure GNOME, Windows-like, or macOS-style</li>
+                        <li role="listitem"><strong>GRUB menu:</strong> Hide or show boot menu</li>
+                    </ul>
+                </div>
+            </div>
+            <button class="scroll-indicator step-scroll-indicator" aria-label="Continue to step 5" type="button">
+                <div class="scroll-arrow" aria-hidden="true"></div>
+                <span class="sr-only">Next: Complete</span>
+            </button>
+        </article>
+
+        <!-- Step 5: Complete -->
+        <article class="section final-section" data-step="5" id="step-5">
+            <div class="container">
+                <header class="step-header">
+                    <span class="step-number" aria-label="Step 5">05</span>
+                    <h2>Enjoy Your New Desktop</h2>
+                </header>
+                <div class="step-content">
+                    <p>Let the script work its magic and then reboot into your new minimal Fedora GNOME desktop!</p>
+                    <section class="features" aria-labelledby="features-title">
+                        <h3 id="features-title" class="sr-only">Key Features</h3>
+                        <div class="feature" role="article">
+                            <h4>🎨 Customizable</h4>
+                            <p>Choose your preferred desktop style</p>
+                        </div>
+                        <div class="feature" role="article">
+                            <h4>⚡ Minimal</h4>
+                            <p>Only essential packages installed</p>
+                        </div>
+                        <div class="feature" role="article">
+                            <h4>🔒 Secure</h4>
+                            <p>Latest Fedora with security updates</p>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </article>
+    </main>
 
     <!-- Footer -->
-    <footer class="footer">
+    <footer class="footer" role="contentinfo">
         <div class="container">
-            <p>&copy; 2025 MIT No Attribution License</p>
-            <p>Made with ❤️ for the Fedora community</p>
+            <p>&copy; 2025 <abbr title="MIT No Attribution License">MIT-0</abbr> License</p>
+            <p>Made with <span aria-label="love">❤️</span> for the Fedora community</p>
         </div>
     </footer>
 
-    <script src="js/script.js"></script>
+    <!-- Scripts -->
+    <script src="js/script.js" defer></script>
+
+    <!-- Schema.org structured data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "HowTo",
+        "name": "Install Fedora GNOME - Minimal Setup Guide",
+        "description": "A minimal, elegant Fedora GNOME installation script with interactive setup",
+        "image": "",
+        "totalTime": "PT30M",
+        "estimatedCost": {
+            "@type": "MonetaryAmount",
+            "currency": "USD",
+            "value": "0"
+        },
+        "supply": [
+            {
+                "@type": "HowToSupply",
+                "name": "Computer with internet connection"
+            },
+            {
+                "@type": "HowToSupply", 
+                "name": "USB drive (4GB or larger)"
+            }
+        ],
+        "tool": [
+            {
+                "@type": "HowToTool",
+                "name": "Fedora Everything ISO"
+            }
+        ],
+        "step": [
+            {
+                "@type": "HowToStep",
+                "name": "Download Fedora Everything",
+                "text": "Download and install Fedora Everything from the official website",
+                "url": "https://fedoraproject.org/everything/download"
+            },
+            {
+                "@type": "HowToStep",
+                "name": "Login and Switch to Root", 
+                "text": "Login with your user account and switch to root privileges using sudo su -"
+            },
+            {
+                "@type": "HowToStep",
+                "name": "Execute the Installation Script",
+                "text": "Run the automated installation script: bash <(curl -fsSL ifg.sh)"
+            },
+            {
+                "@type": "HowToStep",
+                "name": "Answer Configuration Questions",
+                "text": "The script will prompt you for installation scope, app bundle, wallpapers, desktop style, and GRUB menu preferences"
+            },
+            {
+                "@type": "HowToStep",
+                "name": "Enjoy Your New Desktop",
+                "text": "Let the script complete and reboot into your new minimal Fedora GNOME desktop"
+            }
+        ]
+    }
+    </script>
 </body>
 </html>
 
