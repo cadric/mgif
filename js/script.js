@@ -572,7 +572,306 @@ class FedoraInstallerUI {
         this.#updateProgressBar();
         this.#updateParallax();
         this.#applyPerformanceOptimizations();
+        this.#initializeShowcaseVideo();
         console.log('✨ Fedora GNOME installer website loaded successfully!');
+    }
+
+    /**
+     * Initialize showcase video with enhanced loading and interaction
+     */
+    #initializeShowcaseVideo() {
+        const video = document.querySelector('.showcase-video');
+        if (!video) return;
+
+        try {
+            // Set up loading detection
+            const handleVideoLoad = () => {
+                video.setAttribute('data-loaded', 'true');
+                console.log('📺 Showcase video loaded successfully');
+            };
+
+            // Handle load events
+            if (video.readyState >= 3) {
+                // Video already loaded
+                handleVideoLoad();
+            } else {
+                video.addEventListener('loadeddata', handleVideoLoad, { once: true });
+                video.addEventListener('canplaythrough', handleVideoLoad, { once: true });
+            }
+
+            // Error handling
+            video.addEventListener('error', (error) => {
+                console.error('Video failed to load:', error);
+                this.#handleVideoError(video);
+            }, { once: true });
+
+            // Initialize video controls
+            this.#initializeVideoControls(video);
+
+            // Intersection observer for performance optimization
+            const videoObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        // Video is visible, ensure it's playing
+                        this.#ensureVideoPlaying(video);
+                    } else {
+                        // Video is not visible, pause to save resources
+                        video.pause();
+                        this.#updatePlayPauseButton(false);
+                    }
+                });
+            }, {
+                threshold: 0.25,
+                rootMargin: '50px'
+            });
+
+            videoObserver.observe(video);
+
+            // Handle user interaction preferences
+            this.#respectUserPreferences(video);
+
+        } catch (error) {
+            console.error('Failed to initialize showcase video:', error);
+            this.#handleVideoError(video);
+        }
+    }
+
+    /**
+     * Initialize custom video controls
+     * @param {HTMLVideoElement} video 
+     */
+    #initializeVideoControls(video) {
+        const playPauseBtn = document.getElementById('play-pause-btn');
+        const muteBtn = document.getElementById('mute-btn');
+
+        if (!playPauseBtn || !muteBtn) return;
+
+        // Play/Pause functionality
+        playPauseBtn.addEventListener('click', () => {
+            if (video.paused) {
+                video.play().catch(error => {
+                    console.log('Play failed:', error.name);
+                });
+            } else {
+                video.pause();
+            }
+        });
+
+        // Mute/Unmute functionality
+        muteBtn.addEventListener('click', () => {
+            video.muted = !video.muted;
+            this.#updateMuteButton(video.muted);
+        });
+
+        // Update button states when video state changes
+        video.addEventListener('play', () => this.#updatePlayPauseButton(true));
+        video.addEventListener('pause', () => this.#updatePlayPauseButton(false));
+        video.addEventListener('volumechange', () => this.#updateMuteButton(video.muted));
+
+        // Keyboard accessibility
+        video.addEventListener('keydown', (e) => {
+            switch(e.code) {
+                case 'Space':
+                    e.preventDefault();
+                    playPauseBtn.click();
+                    break;
+                case 'KeyM':
+                    e.preventDefault();
+                    muteBtn.click();
+                    break;
+            }
+        });
+
+        // Initialize button states
+        this.#updatePlayPauseButton(!video.paused);
+        this.#updateMuteButton(video.muted);
+    }
+
+    /**
+     * Update play/pause button appearance
+     * @param {boolean} isPlaying 
+     */
+    #updatePlayPauseButton(isPlaying) {
+        const playPauseBtn = document.getElementById('play-pause-btn');
+        if (!playPauseBtn) return;
+
+        const playIcon = playPauseBtn.querySelector('.play-icon');
+        const pauseIcon = playPauseBtn.querySelector('.pause-icon');
+
+        if (isPlaying) {
+            playIcon.style.display = 'none';
+            pauseIcon.style.display = 'block';
+            playPauseBtn.setAttribute('aria-label', 'Pause video');
+        } else {
+            playIcon.style.display = 'block';
+            pauseIcon.style.display = 'none';
+            playPauseBtn.setAttribute('aria-label', 'Play video');
+        }
+    }
+
+    /**
+     * Update mute button appearance
+     * @param {boolean} isMuted 
+     */
+    #updateMuteButton(isMuted) {
+        const muteBtn = document.getElementById('mute-btn');
+        if (!muteBtn) return;
+
+        const volumeIcon = muteBtn.querySelector('.volume-icon');
+        const mutedIcon = muteBtn.querySelector('.muted-icon');
+
+        if (isMuted) {
+            volumeIcon.style.display = 'none';
+            mutedIcon.style.display = 'block';
+            muteBtn.setAttribute('aria-label', 'Unmute video');
+        } else {
+            volumeIcon.style.display = 'block';
+            mutedIcon.style.display = 'none';
+            muteBtn.setAttribute('aria-label', 'Mute video');
+        }
+    }
+
+    /**
+     * Ensure video is playing when visible
+     * @param {HTMLVideoElement} video 
+     */
+    #ensureVideoPlaying(video) {
+        if (video.paused && video.readyState >= 3) {
+            const playPromise = video.play();
+            
+            if (playPromise !== undefined) {
+                playPromise
+                    .then(() => {
+                        // Video started playing successfully
+                    })
+                    .catch(error => {
+                        // Auto-play was prevented, which is fine
+                        console.log('Video autoplay prevented (user preference):', error.name);
+                    });
+            }
+        }
+    }
+
+    /**
+     * Respect user preferences for motion and data usage
+     * @param {HTMLVideoElement} video 
+     */
+    #respectUserPreferences(video) {
+        // Respect prefers-reduced-motion
+        if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+            video.pause();
+            video.removeAttribute('autoplay');
+            console.log('🎬 Video autoplay disabled due to user motion preferences');
+        }
+
+        // Respect data saver preferences (if supported)
+        if (navigator.connection?.saveData) {
+            video.preload = 'none';
+            video.pause();
+            video.removeAttribute('autoplay');
+            console.log('📡 Video preload disabled due to data saver preference');
+            
+            // Add a play button overlay for data saver users
+            this.#addVideoPlayButton(video);
+        }
+    }
+
+    /**
+     * Add a manual play button for users with data constraints
+     * @param {HTMLVideoElement} video 
+     */
+    #addVideoPlayButton(video) {
+        const playButton = document.createElement('button');
+        playButton.innerHTML = `
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M8 5v14l11-7z"/>
+            </svg>
+            <span>Play Installation Demo</span>
+        `;
+        playButton.className = 'video-play-button';
+        playButton.style.cssText = `
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(59, 130, 246, 0.9);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 16px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(8px);
+            z-index: 10;
+        `;
+
+        // Add hover effect
+        playButton.addEventListener('mouseenter', () => {
+            playButton.style.transform = 'translate(-50%, -50%) scale(1.05)';
+            playButton.style.background = 'rgba(59, 130, 246, 1)';
+        });
+
+        playButton.addEventListener('mouseleave', () => {
+            playButton.style.transform = 'translate(-50%, -50%) scale(1)';
+            playButton.style.background = 'rgba(59, 130, 246, 0.9)';
+        });
+
+        // Handle click
+        playButton.addEventListener('click', () => {
+            video.play();
+            playButton.remove();
+        });
+
+        // Add button to video container
+        const videoContainer = video.closest('.video-showcase');
+        if (videoContainer) {
+            videoContainer.style.position = 'relative';
+            videoContainer.appendChild(playButton);
+        }
+    }
+
+    /**
+     * Handle video loading errors gracefully
+     * @param {HTMLVideoElement} video 
+     */
+    #handleVideoError(video) {
+        const videoContainer = video.closest('.video-showcase');
+        if (!videoContainer) return;
+
+        // Create fallback content
+        const fallback = document.createElement('div');
+        fallback.className = 'video-fallback';
+        fallback.innerHTML = `
+            <div class="video-fallback-content">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor" opacity="0.5">
+                    <path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8 12.5v-9l6 4.5-6 4.5z"/>
+                </svg>
+                <h3>Installation Demo</h3>
+                <p>Experience the smooth, automated Fedora GNOME installation process.</p>
+                <a href="https://ifg.sh/showcase.mp4" target="_blank" rel="noopener noreferrer" class="fallback-link">
+                    View Demo Video →
+                </a>
+            </div>
+        `;
+
+        fallback.style.cssText = `
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
+            background: var(--color-bg-secondary);
+            border-radius: var(--radius-lg);
+            text-align: center;
+            color: var(--color-text-secondary);
+        `;
+
+        // Replace video with fallback
+        video.replaceWith(fallback);
     }
 
     /**

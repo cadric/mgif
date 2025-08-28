@@ -13,23 +13,25 @@
 #
 
 set -Eeuo pipefail
-IFS=$'\n\t'
-trap 'printf "FATAL: Unhandled error (exit code %s) on line %s of %s\n" "$?" "$LINENO" "$0" >&2' ERR
+
+# Security/determinism hardening
+umask 022
+export PATH=/usr/sbin:/usr/bin:/sbin:/bin
 
 # =========================================================================
 # == CONFIGURATION & GLOBALS
 # =========================================================================
 
-readonly SCRIPT_NAME="$(basename "$0")"
-readonly SCRIPT_VERSION="2.0.1" # Version bumped to reflect major hardening
-readonly LOG_FILE="${IFG_LOG_FILE:-/var/log/ifg-setup.log}"
-readonly LOG_MAX_SIZE="${IFG_LOG_MAX_SIZE:-10485760}"  # 10MB
-readonly LOG_KEEP_ROTATED="${IFG_LOG_KEEP_ROTATED:-3}" # Keep 3 rotated logs
+declare -r SCRIPT_NAME="$(basename "$0")"
+declare -r SCRIPT_VERSION="2.0.1" # Version bumped to reflect major hardening
+declare -r LOG_FILE="${IFG_LOG_FILE:-/var/log/ifg-setup.log}"
+declare -r LOG_MAX_SIZE="${IFG_LOG_MAX_SIZE:-10485760}"  # 10MB
+declare -r LOG_KEEP_ROTATED="${IFG_LOG_KEEP_ROTATED:-3}" # Keep 3 rotated logs
 
-readonly WALLPAPER_LIGHT_URL="https://ifg.sh/light.png"
-readonly WALLPAPER_DARK_URL="https://ifg.sh/dark.png"
-readonly WALLPAPER_LIGHT_SHA256="6bd25a6adc86e42ae2f8e99984158ae1776f836693c9d8e22527882ad7b74231"
-readonly WALLPAPER_DARK_SHA256="d32e93c542a38d254ea84e6bd0e1ba5394b6146c00d14cfc96bfe0b0205dda5c"
+declare -r WALLPAPER_LIGHT_URL="https://ifg.sh/light.png"
+declare -r WALLPAPER_DARK_URL="https://ifg.sh/dark.png"
+declare -r WALLPAPER_LIGHT_SHA256="6bd25a6adc86e42ae2f8e99984158ae1776f836693c9d8e22527882ad7b74231"
+declare -r WALLPAPER_DARK_SHA256="d32e93c542a38d254ea84e6bd0e1ba5394b6146c00d14cfc96bfe0b0205dda5c"
 
 # Modern Bash 5.0+ extension management using nameref
 readonly WINDOWS_EXTENSIONS=(
@@ -49,7 +51,7 @@ declare -Ar EXTENSION_SET=(
 )
 
 # Step titles for collection (Bash 5.0+ associative array)
-declare -A readonly STEP_TITLES=(
+declare -Ar STEP_TITLES=(
     [intro]="Introduction"
     [1]="Download Fedora"
     [2]="Login as Root"
@@ -96,14 +98,19 @@ init_colors() {
     return 1
 }
 
-# Error handling and cleanup - moved to logging section above
+# Error handling and cleanup - consolidated single definition
 
 cleanup() {
     local exit_code=$?
-    if [[ $exit_code -ne 0 ]]; then
-        tput cnorm 2>/dev/null || true
+    # Show cursor even if spinner failed
+    tput cnorm 2>/dev/null || true
+    
+    # Remove secure temp dir if created
+    [[ -n "$TEMP_DIR" ]] && rm -rf "$TEMP_DIR" || true
+    
+    if (( exit_code != 0 )); then
         printf '%s' "${RESET:-}"
-        log_error "Unexpected error occurred (exit code: $exit_code) on line ${BASH_LINENO[0]:-unknown}"
+        log_error "Unexpected error (exit code: ${exit_code}) on line ${BASH_LINENO[0]:-unknown}"
         
         # Log error to file if logging is set up
         if [[ -f "$LOG_FILE" ]]; then
@@ -114,12 +121,9 @@ cleanup() {
             } >> "$LOG_FILE" 2>/dev/null
         fi
         
-        # Only print summary if we have initialized the tracking arrays
-        if [[ -v CHANGED_ITEMS ]]; then
-            print_summary
-        fi
+        # Summarize partial progress to help recovery
+        [[ -v CHANGED_ITEMS ]] && print_summary || true
     fi
-    [[ -n "$TEMP_DIR" ]] && rm -rf "$TEMP_DIR"
 }
 
 # --- Logging & Error Handling ---
@@ -137,20 +141,10 @@ die() { log_error "$*"; exit "${2:-1}"; }
 
 on_error() {
     local exit_code=$1 line_no=$2 command=$3
-    log_error "Unhandled error (exit code ${exit_code}) on line ${line_no}: ${command}"
-    # Cleanup vil blive kaldt automatisk af EXIT trap
-}
-
-cleanup() {
-    local exit_code=$?
-    # Gendan cursor, hvis spinneren blev afbrudt
-    tput cnorm 2>/dev/null || true
-    # Ryd op i temp-mappen, hvis den blev oprettet
-    [[ -n "$TEMP_DIR" ]] && rm -rf "$TEMP_DIR"
-    # Hvis scriptet fejlede, print en opsummering
-    if [[ $exit_code -ne 0 && -v CHANGED_ITEMS ]]; then
-        print_summary
-    fi
+    # Print FATAL message immediately to stderr for critical visibility
+    printf "FATAL: Unhandled error (exit code %s) on line %s of %s\n" "$exit_code" "$line_no" "$0" >&2
+    log_error "Unhandled error (exit ${exit_code}) on line ${line_no}: ${command}"
+    # Cleanup will be called automatically by EXIT trap
 }
 
 # Log file rotation and size management
@@ -308,10 +302,12 @@ Options:
 Environment Variables:
   IFG_FORCE_SCOPE     Override flatpak scope (system|user)
   IFG_INSTALL_APPS    Override app installation (yes|no)
-  IFG_SKIP_GRUB       Override GRUB configuration (yes|no)
+  IFG_HIDE_GRUB       Override GRUB configuration (yes|no)
   IFG_STYLE           Override extension style (1-3)
   IFG_INSTALL_WALLPAPERS Override wallpaper installation (yes|no)
+  IFG_VERBOSE_EXTINFO Enable verbose extension info fetching (0|1)
   IFG_FLATHUB_SUBSET  Use verified subset of Flathub (verified|full)
+  IFG_NO_DELAY        Skip delays for automated environments (0|1)
   LOG_FILE             Log file location (default: /var/log/ifg-setup.log)
   LOG_MAX_SIZE         Max log size before rotation (default: 10MB)
   LOG_KEEP_ROTATED     Number of rotated logs to keep (default: 3)
@@ -321,7 +317,7 @@ Environment Variables:
 
 $(printf '\nDefaults: scope=%s, apps=%s, wallpapers=%s, style=%s, hide-grub=%s\n' \
   "${IFG_FORCE_SCOPE:-user}" "${IFG_INSTALL_APPS:-no}" \
-  "${IFG_INSTALL_WALLPAPERS:-no}" "${IFG_STYLE:-1}" "${IFG_SKIP_GRUB:-no}")
+  "${IFG_INSTALL_WALLPAPERS:-no}" "${IFG_STYLE:-1}" "${IFG_HIDE_GRUB:-no}")
 
 Examples:
   # Interactive mode (default)
@@ -562,19 +558,32 @@ ensure_flathub(){
     local runner
     [[ "$scope" == "user" ]] && runner="run_as_user_dbus" || runner="command"
 
-    if current_url=$($runner flatpak remote-info --url "${args[@]}" "$remote_name" 2>/dev/null); then
-        if [[ "$current_url" != "$expected_url" ]]; then
-            log_warn "Flathub remote '$remote_name' has incorrect URL: '$current_url'. Correcting."
-            if $runner flatpak remote-modify "${args[@]}" "$remote_name" --url="$expected_url"; then
-                track_result "changed" "Flathub ($scope): Corrected URL"
+    # Use lighter flatpak remotes command instead of remote-info
+    if current_url=$($runner flatpak remotes "${args[@]}" --columns=name,url --show-disabled 2>/dev/null | \
+                     awk -v name="$remote_name" '$1 == name {print $2}'); then
+        if [[ -n "$current_url" ]]; then
+            if [[ "$current_url" != "$expected_url" ]]; then
+                log_warn "Flathub remote '$remote_name' has incorrect URL: '$current_url'. Correcting."
+                if $runner flatpak remote-modify "${args[@]}" "$remote_name" --url="$expected_url"; then
+                    track_result "changed" "Flathub ($scope): Corrected URL"
+                else
+                    track_result "failed" "Flathub ($scope): Failed to correct URL"
+                fi
             else
-                track_result "failed" "Flathub ($scope): Failed to correct URL"
+                track_result "skipped" "Flathub ($scope): Already configured correctly"
             fi
         else
-            track_result "skipped" "Flathub ($scope): Already configured correctly"
+            # Remote name not found in list
+            log_info "Flathub remote not found for scope '$scope'. Adding it now."
+            if $runner flatpak remote-add --if-not-exists "${args[@]}" "$remote_name" "$expected_url"; then
+                track_result "changed" "Flathub ($scope): Added new remote"
+            else
+                track_result "failed" "Flathub ($scope): Failed to add new remote"
+            fi
         fi
     else
-        log_info "Flathub remote not found for scope '$scope'. Adding it now."
+        # Command failed entirely
+        log_info "Could not list remotes for scope '$scope'. Adding Flathub."
         if $runner flatpak remote-add --if-not-exists "${args[@]}" "$remote_name" "$expected_url"; then
             track_result "changed" "Flathub ($scope): Added new remote"
         else
@@ -586,55 +595,93 @@ ensure_flathub(){
 install_flatpaks(){
     local scope="$1"; shift; local ids=("$@"); (( ${#ids[@]} )) || return 0
     
-    for app in "${ids[@]}"; do
-        # Check if already installed
-        local check_args=()
-        local install_args=(install -y --noninteractive flathub "$app" --or-update)
-        
+    local check_args=()
+    local install_args=(install -y --noninteractive flathub --or-update)
+    local runner="flatpak"
+    
+    if [[ "$scope" == "user" ]]; then
+        check_args=(--user)
+        install_args=(--user "${install_args[@]}")
+        runner="run_as_user_dbus flatpak"
+    else
+        check_args=(--system)
+        install_args=(--system "${install_args[@]}")
+        runner="flatpak"
+    fi
+    
+    # Precompute installed set once using list command
+    local installed_apps=()
+    mapfile -t installed_apps < <(
         if [[ "$scope" == "user" ]]; then
-            check_args=(--user)
-            install_args=(--user "${install_args[@]}")
-            
-            # Check if already installed
-            if run_as_user_dbus flatpak info "${check_args[@]}" "$app" >/dev/null 2>&1; then
-                track_result "skipped" "Flatpak: already installed $app"
-                continue
-            fi
-            
-            muted "Installing $app..."
-            if run_as_user_dbus flatpak "${install_args[@]}"; then
-                track_result "changed" "Flatpak: installed/updated $app"
-            else
-                # Re-check existence to provide accurate status
-                if run_as_user_dbus flatpak info "${check_args[@]}" "$app" >/dev/null 2>&1; then
-                    track_result "skipped" "Flatpak: present after failed attempt on $app"
-                else
-                    track_result "failed" "Flatpak: could not install $app"
-                fi
-            fi
+            run_as_user_dbus flatpak list "${check_args[@]}" --app --columns=application 2>/dev/null || true
         else
-            check_args=(--system)
-            install_args=(--system "${install_args[@]}")
-            
-            # Check if already installed
-            if flatpak info "${check_args[@]}" "$app" >/dev/null 2>&1; then
-                track_result "skipped" "Flatpak: already installed $app"
-                continue
+            flatpak list "${check_args[@]}" --app --columns=application 2>/dev/null || true
+        fi
+    )
+    
+    # Filter out already installed apps
+    local to_install=()
+    local already_installed=()
+    
+    for app in "${ids[@]}"; do
+        local found=0
+        for installed in "${installed_apps[@]}"; do
+            if [[ "$installed" == "$app" ]]; then
+                found=1
+                break
             fi
-            
-            muted "Installing $app..."
-            if flatpak "${install_args[@]}"; then
-                track_result "changed" "Flatpak: installed/updated $app"
-            else
-                # Re-check existence to provide accurate status
-                if flatpak info "${check_args[@]}" "$app" >/dev/null 2>&1; then
-                    track_result "skipped" "Flatpak: present after failed attempt on $app"
-                else
-                    track_result "failed" "Flatpak: could not install $app"
-                fi
-            fi
+        done
+        
+        if (( found )); then
+            already_installed+=("$app")
+        else
+            to_install+=("$app")
         fi
     done
+    
+    # Report already installed apps
+    for app in "${already_installed[@]}"; do
+        track_result "skipped" "Flatpak: already installed $app"
+    done
+    
+    # Batch install remaining apps
+    if (( ${#to_install[@]} > 0 )); then
+        muted "Installing ${#to_install[@]} Flatpak app(s): ${to_install[*]}"
+        
+        if [[ "$scope" == "user" ]]; then
+            if run_as_user_dbus flatpak "${install_args[@]}" "${to_install[@]}"; then
+                # Batch success - mark all as changed
+                for app in "${to_install[@]}"; do
+                    track_result "changed" "Flatpak: installed/updated $app"
+                done
+            else
+                # Batch failed - verify each app individually for accurate status
+                for app in "${to_install[@]}"; do
+                    if run_as_user_dbus flatpak info "${check_args[@]}" "$app" >/dev/null 2>&1; then
+                        track_result "changed" "Flatpak: present after batch install $app"
+                    else
+                        track_result "failed" "Flatpak: could not install $app"
+                    fi
+                done
+            fi
+        else
+            if flatpak "${install_args[@]}" "${to_install[@]}"; then
+                # Batch success - mark all as changed
+                for app in "${to_install[@]}"; do
+                    track_result "changed" "Flatpak: installed/updated $app"
+                done
+            else
+                # Batch failed - verify each app individually for accurate status
+                for app in "${to_install[@]}"; do
+                    if flatpak info "${check_args[@]}" "$app" >/dev/null 2>&1; then
+                        track_result "changed" "Flatpak: present after batch install $app"
+                    else
+                        track_result "failed" "Flatpak: could not install $app"
+                    fi
+                done
+            fi
+        fi
+    fi
 }
 
 # =========================================================================
@@ -914,8 +961,8 @@ EOF
                        "macOS style (Dash to Dock + Tray Icons)")"
     fi
     
-    if [[ -n "${IFG_SKIP_GRUB:-}" ]]; then
-        hide_grub_choice="${IFG_SKIP_GRUB,,}"
+    if [[ -n "${IFG_HIDE_GRUB:-}" ]]; then
+        hide_grub_choice="${IFG_HIDE_GRUB,,}"
     else
         hide_grub_choice="$(ask_yesno "Do you wish to hide GRUB and boot directly to GNOME?" "n")"
     fi
@@ -972,10 +1019,6 @@ install_base_packages() {
         "python3-pip"
     )
     
-    if ! run_with_spinner "Updating dnf cache" dnf -y makecache; then
-        warning "DNF makecache failed, continuing anyway..."
-    fi
-
     if ! run_with_spinner "Upgrading system packages" dnf upgrade -y --refresh; then
         warning "DNF upgrade failed, continuing anyway..."
     fi
@@ -1184,7 +1227,8 @@ install_curated_flatpaks() {
 sha256_ok() {
     local file="$1" expected="$2"
     have sha256sum || { log_warn "sha256sum command not found, cannot verify file integrity."; return 1; }
-    local got; got=$(sha256sum "$file" | awk '{print $1}')
+    local got
+    read -r got _ < <(sha256sum "$file")
     [[ "$got" == "$expected" ]]
 }
 
@@ -1570,6 +1614,8 @@ _edit_grub_config() {
         if grep -qE "^\s*#?\s*${key}=" "$grub_file"; then
             # Update existing line, removing any leading comment
             sed -i.bak "s|^\s*#*\s*${key}=.*|${key}=${value}|" "$grub_file"
+            # Clean up the backup file created by sed -i.bak
+            rm -f "${grub_file}.bak"
         else
             # Add the line at the end of the file
             printf '\n%s=%s\n' "$key" "$value" >> "$grub_file"
@@ -1692,9 +1738,15 @@ install_extension_with_info() {
     local extension="$1"
     local info
     
-    # Try to get extension info using JSON API
-    if info=$(parse_extension_info "$extension" "name"); then
-        muted "Installing extension: $extension ($info)"
+    # Only fetch extension metadata if explicitly requested via environment variable
+    # This avoids unnecessary network requests since gext will fetch the extension anyway
+    if [[ "${IFG_VERBOSE_EXTINFO:-0}" == "1" ]]; then
+        # Try to get extension info using JSON API
+        if info=$(parse_extension_info "$extension" "name"); then
+            muted "Installing extension: $extension ($info)"
+        else
+            muted "Installing extension: $extension"
+        fi
     else
         muted "Installing extension: $extension"
     fi
@@ -1709,89 +1761,6 @@ install_extension_with_info() {
         fi
     else
         track_result "failed" "Extension: could not install $extension"
-    fi
-}
-
-# Modern package management using mapfile (Bash 5.0+ bulk reading)
-load_package_list_from_file() {
-    local list_file="$1"
-    local -n package_array_ref="$2"  # nameref for output array
-    
-    if [[ ! -f "$list_file" ]]; then
-        log_debug "Package list file not found: $list_file"
-        return 1
-    fi
-    
-    # Use mapfile for efficient bulk reading (Bash 4.0+, optimized in 5.0+)
-    local -a raw_lines
-    mapfile -t raw_lines < "$list_file"
-    
-    # Filter out comments and empty lines using parameter expansion
-    local line
-    for line in "${raw_lines[@]}"; do
-        # Remove leading/trailing whitespace and skip comments/empty lines
-        line="${line#"${line%%[![:space:]]*}"}"  # Remove leading whitespace
-        line="${line%"${line##*[![:space:]]}"}"  # Remove trailing whitespace
-        
-        # Skip empty lines and comments
-        [[ -n "$line" && ! "$line" =~ ^[[:space:]]*# ]] && package_array_ref+=("$line")
-    done
-    
-    log_debug "Loaded ${#package_array_ref[@]} packages from $list_file"
-    return 0
-}
-
-# Enhanced package installation with external package list support
-install_packages_enhanced() {
-    local package_list_file="${IFG_PACKAGE_LIST:-}"
-    local -a packages
-    
-    # Try to load from external file first
-    if [[ -n "$package_list_file" ]] && load_package_list_from_file "$package_list_file" packages; then
-        log_info "Using package list from: $package_list_file"
-    else
-        # Use default package list
-        packages=(
-            "gnome-shell"
-            "gnome-console" 
-            "nautilus"
-            "gnome-software"
-            "gnome-disks"
-            "gettext"
-            "git"
-            "patch"
-            "patchutils"
-            "unzip"
-            "tar"
-            "gzip"
-            "curl"
-            "jq"
-            "python3"
-            "python3-pip"
-        )
-    fi
-    
-    if (( ${#packages[@]} == 0 )); then
-        log_warn "No packages to install"
-        return 0
-    fi
-    
-    log_info "Installing ${#packages[@]} packages: ${packages[*]}"
-    
-    if ! run_with_spinner "Updating dnf cache" dnf -y makecache; then
-        warning "DNF makecache failed, continuing anyway..."
-    fi
-
-    if ! run_with_spinner "Upgrading system packages" dnf upgrade -y --refresh; then
-        warning "DNF upgrade failed, continuing anyway..."
-    fi
-    
-    if run_with_spinner "Installing packages: ${packages[*]}" \
-        dnf -y --setopt=install_weak_deps=False install "${packages[@]}"; then
-        track_result "changed" "dnf: installed ${packages[*]}"
-    else
-        track_result "failed" "dnf: error installing packages"
-        return 1
     fi
 }
 
@@ -1833,7 +1802,7 @@ parse_arguments() {
     local install_apps="${IFG_INSTALL_APPS:-no}"
     local install_wallpapers="${IFG_INSTALL_WALLPAPERS:-no}"
     local extension_style="${IFG_STYLE:-1}"
-    local hide_grub="${IFG_SKIP_GRUB:-no}"
+    local hide_grub="${IFG_HIDE_GRUB:-no}"
     local has_args=0
     
     while [[ $# -gt 0 ]]; do
@@ -2034,16 +2003,22 @@ read_from_tty_or_stdin() {
         return 1
     fi
 }
+
+# =========================================================================
+# == UNIFIED TRAP SETUP (after all functions are defined)
+# =========================================================================
+# One unified set of traps to avoid conflicts and ensure consistent behavior
+trap 'on_error $? $LINENO "$BASH_COMMAND"' ERR
+trap 'cleanup' EXIT
+trap 'die "Interrupted by user (SIGINT)"' INT
+trap 'die "Terminated by system (SIGTERM)"' TERM
+
 # Main function
 main() {
     init_colors
 
     TEMP_DIR=$(mktemp -d)
     chmod 700 "$TEMP_DIR" || die "Could not secure temporary directory: $TEMP_DIR"
-    trap cleanup EXIT
-    trap 'on_error $? $LINENO "$BASH_COMMAND"' ERR
-    trap 'die "Interrupted by user (SIGINT)"' INT
-    trap 'die "Terminated by system (SIGTERM)"' TERM
 
     parse_arguments "$@"
 
@@ -2120,7 +2095,8 @@ main() {
         printf '\n'
         if [[ "$(ask_yesno "Do you wish to reboot the system now?" "y")" == "yes" ]]; then
             emph "Rebooting now... See you on the other side!"
-            sleep 3
+            # Allow skipping delay for automated/CI environments
+            [[ "${IFG_NO_DELAY:-0}" != "1" ]] && sleep 3
             reboot
         else
             printf '\n'
