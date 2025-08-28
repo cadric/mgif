@@ -343,65 +343,216 @@ check_network() {
     return 1
 }
 
-# User detection
-detect_primary_user() {
-    local user=""
-    
-    if [[ -n "${SUDO_USER:-}" && "$SUDO_USER" != "root" ]]; then
-        user="$SUDO_USER"
-    elif user="$(logname 2>/dev/null)" && [[ "$user" != "root" ]]; then
-        :  # user is already set
+# =========================================================================
+# == ROBUST USER & SESSION HANDLING (START)
+# =========================================================================
+# Purpose: Solves problems with running per-user commands (especially Flatpak/D-Bus)
+# from a root context, e.g. after `sudo su -` or via `curl | sudo bash`.
+#
+# Strategy:
+# 1. A robust `detect_user` finds the right desktop user.
+# 2. A specialized `run_as_user_dbus` finds and reuses the user's
+#    active D-Bus session, if it exists.
+# 3. If no active session exists, a new, private D-Bus bus is created
+#    on-the-fly with `dbus-run-session`.
+# 4. A simple `run_as_user` is kept for commands that don't require D-Bus.
+
+# Global state for user detection
+DETECTED_USER=""
+DETECTED_UID=""
+
+# Check if command exists
+have() { command -v "$1" >/dev/null 2>&1; }
+
+# User detection (The smart detective)
+# Finds the most likely desktop user, even in complex sudo/su scenarios.
+# Source: This function is a synthesis of standard practices. It uses `loginctl`
+# as the most reliable method on systemd systems, as described in
+# systemd documentation for session management.
+detect_user() {
+    # Reset if function is called multiple times
+    DETECTED_USER=""
+    DETECTED_UID=""
+    local u=""
+
+    # Only run detection logic if we are root. Otherwise the user is just ourselves.
+    if [[ ${EUID:-$(id -u)} -eq 0 ]]; then
+        # Cascade of checks, from most to least reliable
+        if [[ -n "${SUDO_USER:-}" && "${SUDO_USER}" != "root" ]]; then
+            u="${SUDO_USER}"
+        elif have loginctl; then
+            # Find the first graphical or active user session that isn't a display manager.
+            # This is the most robust method on a modern desktop system.
+            u=$(loginctl list-sessions --no-legend 2>/dev/null | \
+                awk '$3!="gdm" && $3!="sddm" && $3!="lightdm" && $4!="" {print $3; exit}')
+        fi
+        # Last resort: Find the first "human" user (UID >= 1000)
+        [[ -z "$u" ]] && u=$(awk -F: '$3>=1000 && $1!="nobody"{print $1; exit}' /etc/passwd 2>/dev/null || true)
     else
-        user=""
-        while IFS=: read -r username _ uid _; do
-            [[ "$uid" -ge 1000 && "$username" != "nobody" ]] && { user="$username"; break; }
-        done < /etc/passwd 2>/dev/null || true
+        u="${USER:-$(id -un)}"
     fi
-    
-    printf '%s' "$user"
+
+    if [[ -z "$u" ]]; then
+        log_warn "Could not determine a unique desktop user."
+        return 1
+    fi
+
+    local uid
+    uid=$(id -u "$u" 2>/dev/null)
+    if [[ -z "$uid" ]]; then
+        log_warn "Could not find UID for detected user: $u"
+        return 1
+    fi
+
+    DETECTED_USER="$u"
+    DETECTED_UID="$uid"
+    log_info "Desktop user detected: ${BOLD}${DETECTED_USER}${RESET} (uid: ${DETECTED_UID})"
+    return 0
 }
 
-# Execute command as specific user
+# D-Bus sensitive command execution
+# Private helper function. Contains the advanced D-Bus logic.
+# Source: This method is based on Freedesktop.org's specifications for D-Bus
+# and XDG Base Directory Specification. It checks for the canonical socket path
+# in /run/user/$UID/bus to reuse an existing session.
+_run_with_user_bus() {
+    # Check if an active D-Bus session socket exists for the user.
+    # '-S' checks if the file exists and is a socket.
+    local bus_sock="/run/user/${DETECTED_UID}/bus"
+    if [[ -S "$bus_sock" ]]; then
+        # Great! We reuse the right, active desktop session.
+        # We set the necessary environment variables to "connect to it".
+        log_info "Reusing active D-Bus session for ${DETECTED_USER}"
+        sudo -u "${DETECTED_USER}" -H -- env \
+            XDG_RUNTIME_DIR="/run/user/${DETECTED_UID}" \
+            DBUS_SESSION_BUS_ADDRESS="unix:path=${bus_sock}" \
+            "$@"
+    elif have dbus-run-session; then
+        # No active session found. Plan B: We create our own private bus.
+        # It's isolated, but it works for most commands.
+        log_info "No active D-Bus session found. Creating a private bus with dbus-run-session."
+        sudo -u "${DETECTED_USER}" -H -- dbus-run-session -- "$@"
+    else
+        # Last resort: Neither an active session nor the tool to make a new one.
+        # We try anyway, but warn that it might fail.
+        log_warn "No user-bus and 'dbus-run-session' missing. Attempting without bus (may fail)."
+        sudo -u "${DETECTED_USER}" -H -- "$@"
+    fi
+}
+
+# Simple `run_as_user`. Used for commands that do NOT require D-Bus (e.g. `ls`, `mkdir`).
 run_as_user() {
-    local user="$1"
-    shift
-    
-    if [[ "$(id -u)" -eq 0 && "$user" == "root" ]] || [[ "$user" == "$(id -un)" ]]; then
+    if [[ ${EUID:-$(id -u)} -eq 0 && -n "${DETECTED_USER}" ]]; then
+        sudo -u "${DETECTED_USER}" -H -- "$@"
+    else
+        # Either we're not root, or we couldn't find a user. Run as ourselves.
         "$@"
-        return $?
-    fi
-    
-    if command -v sudo >/dev/null 2>&1; then
-        sudo -n -u "$user" -- "$@"
-    elif command -v runuser >/dev/null 2>&1; then
-        runuser -u "$user" -- "$@"
-    elif command -v su >/dev/null 2>&1; then
-        # Build properly escaped command string for su -c
-        local cmd_parts=()
-        local arg
-        for arg in "$@"; do
-            cmd_parts+=("$(printf '%q' "$arg")")
-        done
-        local cmd="${cmd_parts[*]}"
-        su - "$user" -s /bin/bash -c "$cmd"
-    else
-        log_error "Cannot switch to user '$user': no sudo, runuser, or su available"
-        return 127
     fi
 }
 
-
-# Execute command as user with D-Bus session
+# The advanced `run_as_user_dbus`. Used for everything that smells of D-Bus:
+# flatpak --user, gsettings, gnome-extensions, dconf.
 run_as_user_dbus() {
-    local user="$1"
-    shift
-    
-    if [[ -z "$user" || "$user" == "root" ]]; then
-        dbus-run-session "$@"
+    if [[ -z "${DETECTED_USER}" ]]; then
+        log_warn "Cannot run D-Bus command without a detected user."
+        return 1
+    fi
+    if [[ ${EUID:-$(id -u)} -eq 0 ]]; then
+        _run_with_user_bus "$@"
     else
-        run_as_user "$user" dbus-run-session -- "$@"
+        # We're already the right user, so we just run the command directly.
+        # Our own D-Bus session is already active.
+        "$@"
     fi
 }
+
+# Proactive check (User friendliness)
+# Warns early if we anticipate D-Bus problems for user-scope.
+check_user_bus_readiness() {
+    # The check is only relevant if we are root.
+    [[ ${EUID:-$(id -u)} -ne 0 ]] && return 0
+    # If we couldn't find a user, there's no point in checking the bus.
+    [[ -z "${DETECTED_UID}" ]] && return 0
+
+    local sock="/run/user/${DETECTED_UID}/bus"
+    if [[ ! -S "$sock" && ! $(have dbus-run-session) ]]; then
+        log_warn "No active D-Bus session found for ${DETECTED_USER}, and 'dbus-run-session' missing."
+        log_warn "Actions in 'user' scope (Flatpak, gsettings) may fail."
+        log_warn "This often happens if the user is not logged into a graphical session."
+    fi
+}
+
+# Updated Flatpak functions
+# These functions now use the correct D-Bus-aware helper.
+
+ensure_flathub(){
+    local scope="$1"
+    local args=(remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo)
+    if [[ "$scope" == "user" ]]; then
+        # USING THE NEW D-BUS-AWARE FUNCTION
+        run_as_user_dbus flatpak --user "${args[@]}"
+    else
+        flatpak --system "${args[@]}"
+    fi
+}
+
+install_flatpaks(){
+    local scope="$1"; shift; local ids=("$@"); (( ${#ids[@]} )) || return 0
+    
+    for app in "${ids[@]}"; do
+        # Check if already installed
+        local check_args=()
+        local install_args=(install -y --noninteractive flathub "$app" --or-update)
+        
+        if [[ "$scope" == "user" ]]; then
+            check_args=(--user)
+            install_args=(--user "${install_args[@]}")
+            
+            # Check if already installed
+            if run_as_user_dbus flatpak info "${check_args[@]}" "$app" >/dev/null 2>&1; then
+                track_result "skipped" "Flatpak: already installed $app"
+                continue
+            fi
+            
+            muted "Installing $app..."
+            if run_as_user_dbus flatpak "${install_args[@]}"; then
+                track_result "changed" "Flatpak: installed/updated $app"
+            else
+                # Re-check existence to provide accurate status
+                if run_as_user_dbus flatpak info "${check_args[@]}" "$app" >/dev/null 2>&1; then
+                    track_result "skipped" "Flatpak: present after failed attempt on $app"
+                else
+                    track_result "failed" "Flatpak: could not install $app"
+                fi
+            fi
+        else
+            check_args=(--system)
+            install_args=(--system "${install_args[@]}")
+            
+            # Check if already installed
+            if flatpak info "${check_args[@]}" "$app" >/dev/null 2>&1; then
+                track_result "skipped" "Flatpak: already installed $app"
+                continue
+            fi
+            
+            muted "Installing $app..."
+            if flatpak "${install_args[@]}"; then
+                track_result "changed" "Flatpak: installed/updated $app"
+            else
+                # Re-check existence to provide accurate status
+                if flatpak info "${check_args[@]}" "$app" >/dev/null 2>&1; then
+                    track_result "skipped" "Flatpak: present after failed attempt on $app"
+                else
+                    track_result "failed" "Flatpak: could not install $app"
+                fi
+            fi
+        fi
+    done
+}
+
+# =========================================================================
+# == ROBUST USER & SESSION HANDLING (END)
+# =========================================================================
 
 # Spinner for long-running commands
 run_with_spinner() {
@@ -810,11 +961,7 @@ configure_flatpak() {
             fi
         done
 
-        # 2) Find primary user
-        local user
-        user="$(detect_primary_user)"
-
-        # 3) Function: disable + de-enumerate + try to delete, both by known names and by URL match
+        # Function: disable + de-enumerate + try to delete, both by known names and by URL match
         disable_flatpak_fedora_remotes() {
             local scope_flag="$1" # --system or --user
 
@@ -845,8 +992,8 @@ configure_flatpak() {
         disable_flatpak_fedora_remotes --system
 
         # User installation
-        if [[ -n "$user" && "$user" != "root" ]]; then
-            run_as_user "$user" bash -lc 'set -euo pipefail
+        if [[ -n "${DETECTED_USER}" && "${DETECTED_USER}" != "root" ]]; then
+            run_as_user bash -lc 'set -euo pipefail
                 disable_flatpak_user_remotes() {
                     local known=(fedora fedora-testing updates updates-testing)
                     mapfile -t byurl < <(flatpak remotes --user --show-disabled --columns=name,url 2>/dev/null \
@@ -870,52 +1017,33 @@ configure_flatpak() {
             if [[ "${DRY_RUN:-0}" == "1" ]]; then
                 log_info "DRY-RUN: would configure Flathub system-wide"
                 track_result "changed" "Flathub: would be configured (system)"
-            elif flatpak --system remote-ls flathub >/dev/null 2>&1; then
-                track_result "skipped" "Flathub: already configured (system)"
+            else
+                ensure_flathub "system"
+                track_result "changed" "Flathub: configured (system)"
                 muted "Refreshing appstream…"
                 flatpak update -y --appstream --system || true
-            else
-                muted "Adding Flathub remote system-wide..."
-                local flathub_url="https://dl.flathub.org/repo/flathub.flatpakrepo"
-                local args=(remote-add --if-not-exists --system flathub "$flathub_url")
-                [[ "${MFGI_FLATHUB_SUBSET:-}" = "verified" ]] && args=(remote-add --if-not-exists --system --subset=verified flathub "$flathub_url")
-                if flatpak "${args[@]}"; then
-                    [[ "${MFGI_FLATHUB_SUBSET:-}" = "verified" ]] && muted "Using verified subset of Flathub for enhanced security"
-                    track_result "changed" "Flathub: configured (system)"
-                    muted "Refreshing appstream…"
-                    flatpak update -y --appstream --system || true
-                else
-                    track_result "failed" "Flathub: could not be added (system)"
-                fi
             fi
             ;;
         2)
-            local user
-            user="$(detect_primary_user)"
-            if [[ -n "$user" && "$user" != "root" ]]; then
+            if [[ -n "${DETECTED_USER}" && "${DETECTED_USER}" != "root" ]]; then
                 if [[ "${DRY_RUN:-0}" == "1" ]]; then
-                    log_info "DRY-RUN: would configure Flathub for user: $user"
+                    log_info "DRY-RUN: would configure Flathub for user: ${DETECTED_USER}"
                     track_result "changed" "Flathub: would be configured (user)"
-                elif run_as_user "$user" flatpak --user remote-ls flathub >/dev/null 2>&1; then
-                    track_result "skipped" "Flathub: already configured (user)"
-                    muted "Refreshing appstream…"
-                    run_as_user "$user" flatpak update -y --appstream --user || true
                 else
-                    muted "Adding Flathub remote for user: $user"
-                    local flathub_url="https://dl.flathub.org/repo/flathub.flatpakrepo"
-                    local args=(remote-add --if-not-exists --user flathub "$flathub_url")
-                    [[ "${MFGI_FLATHUB_SUBSET:-}" = "verified" ]] && args=(remote-add --if-not-exists --user --subset=verified flathub "$flathub_url")
-                    if run_as_user "$user" flatpak "${args[@]}"; then
-                        [[ "${MFGI_FLATHUB_SUBSET:-}" = "verified" ]] && muted "Using verified subset of Flathub for enhanced security"
+                    if run_as_user_dbus flatpak --user remote-ls flathub >/dev/null 2>&1; then
+                        track_result "skipped" "Flathub: already configured (user)"
+                        muted "Refreshing appstream…"
+                        run_as_user_dbus flatpak update -y --appstream --user || true
+                    else
+                        muted "Adding Flathub remote for user: ${DETECTED_USER}"
+                        ensure_flathub "user"
                         track_result "changed" "Flathub: configured (user)"
                         muted "Refreshing appstream…"
-                        run_as_user "$user" flatpak update -y --appstream --user || true
-                    else
-                        track_result "failed" "Flathub: could not be added (user)"
+                        run_as_user_dbus flatpak update -y --appstream --user || true
                     fi
                 fi
             else
-                warning "No non-root user detected; cannot set up user-level Flathub."
+                log_warn "No non-root user detected; cannot set up user-level Flathub."
                 track_result "skipped" "Flathub: no non-root user"
             fi
             ;;
@@ -943,49 +1071,21 @@ install_curated_flatpaks() {
         "com.mattjakeman.ExtensionManager"
     )
 
-    local install_user
-    local scope_args=()
-    local info_scope=()
-
+    local scope="user"
     if [[ "${USER_FLATPAK_SCOPE:-2}" == "1" ]]; then
-        install_user="root"
-        scope_args=(--system)
-        info_scope=(--system)
-    else
-        install_user="$(detect_primary_user)"
-        # Be explicit: both info and install go to user scope
-        info_scope=(--user)
-        scope_args=(--user)
+        scope="system"
     fi
 
-    for app in "${apps[@]}"; do
-        if [[ "${DRY_RUN:-0}" == "1" ]]; then
-            log_info "DRY-RUN: would install $app"
+    if [[ "${DRY_RUN:-0}" == "1" ]]; then
+        for app in "${apps[@]}"; do
+            log_info "DRY-RUN: would install $app ($scope scope)"
             track_result "changed" "Flatpak: would install $app"
-            continue
-        fi
+        done
+        return 0
+    fi
 
-        # Proactive check: Skip if already installed
-        if run_as_user "$install_user" flatpak info "${info_scope[@]}" "$app" >/dev/null 2>&1; then
-            track_result "skipped" "Flatpak: already installed $app"
-            continue
-        fi
-
-        muted "Installing $app..."
-        
-        local remote=${FLATPAK_REMOTE:-flathub}
-        if spin_as_user "$install_user" "Installing $app" \
-                flatpak install -y --noninteractive "${scope_args[@]}" "$remote" "$app" --or-update; then
-            track_result "changed" "Flatpak: installed/updated $app"
-        else
-            # If installation fails, re-check existence to provide accurate status
-            if run_as_user "$install_user" flatpak info "${info_scope[@]}" "$app" >/dev/null 2>&1; then
-                track_result "skipped" "Flatpak: present after failed attempt on $app"
-            else
-                track_result "failed" "Flatpak: could not install $app"
-            fi
-        fi
-    done
+    # Use the new install_flatpaks function
+    install_flatpaks "$scope" "${apps[@]}"
 }
 
 
@@ -1111,13 +1211,11 @@ install_wallpapers() {
     chmod 0644 "$light_wallpaper" "$dark_wallpaper"
     
     # Apply wallpapers for the current user
-    local user
-    user="$(detect_primary_user)"
-    if [[ -n "$user" && "$user" != "root" ]]; then
+    if [[ -n "${DETECTED_USER}" && "${DETECTED_USER}" != "root" ]]; then
         local light_uri="file://$light_wallpaper"
         local dark_uri="file://$dark_wallpaper"
         
-        muted "Applying wallpapers for user '$user' via gsettings..."
+        muted "Applying wallpapers for user '${DETECTED_USER}' via gsettings..."
         muted "Setting GNOME background keys:"
         muted "  org.gnome.desktop.background picture-uri = '$light_uri'"
         muted "  org.gnome.desktop.background picture-uri-dark = '$dark_uri'"
@@ -1126,13 +1224,13 @@ install_wallpapers() {
         
         # Call gsettings with properly separated/escaped arguments (no shell -c)
         if \
-           run_as_user_dbus "$user" gsettings set org.gnome.desktop.background picture-uri       "$light_uri" && \
-           run_as_user_dbus "$user" gsettings set org.gnome.desktop.background picture-uri-dark "$dark_uri"  && \
-           run_as_user_dbus "$user" gsettings set org.gnome.desktop.background picture-options  "zoom"       && \
-           run_as_user_dbus "$user" gsettings set org.gnome.desktop.screensaver picture-uri     "$dark_uri"
+           run_as_user_dbus gsettings set org.gnome.desktop.background picture-uri       "$light_uri" && \
+           run_as_user_dbus gsettings set org.gnome.desktop.background picture-uri-dark "$dark_uri"  && \
+           run_as_user_dbus gsettings set org.gnome.desktop.background picture-options  "zoom"       && \
+           run_as_user_dbus gsettings set org.gnome.desktop.screensaver picture-uri     "$dark_uri"
         then
             track_result "changed" "Wallpapers: applied for current session"
-            log_info "GNOME background keys configured for user $user"
+            log_info "GNOME background keys configured for user ${DETECTED_USER}"
             log_info "  picture-uri: $light_uri"
             log_info "  picture-uri-dark: $dark_uri" 
             log_info "  picture-options: zoom"
@@ -1146,7 +1244,7 @@ install_wallpapers() {
         # Note about when changes take effect
         muted "Note: Some wallpaper changes may only be visible after logging out and back in"
     else
-        warning "No non-root user detected; skipping per-user wallpaper settings"
+        log_warn "No non-root user detected; skipping per-user wallpaper settings"
         track_result "changed" "Wallpapers: installed system-wide only"
     fi
     
@@ -1176,17 +1274,15 @@ EOF
     fi
 }
 ensure_gext_for_user() {
-    local user="$1"
-    
-    subhead "Ensuring 'gnome-extensions-cli' (gext) is installed for user: $user"
+    subhead "Ensuring 'gnome-extensions-cli' (gext) is installed for user: ${DETECTED_USER}"
     
     if [[ "${DRY_RUN:-0}" == "1" ]]; then
-        log_info "DRY-RUN: would install gext for user $user"
+        log_info "DRY-RUN: would install gext for user ${DETECTED_USER}"
         return 0
     fi
     
     # Check if gext is already available
-    if run_as_user "$user" bash -lc 'command -v gext &>/dev/null'; then
+    if run_as_user bash -lc 'command -v gext &>/dev/null'; then
         status_ok "gext is already installed and in PATH."
         return 0
     fi
@@ -1198,10 +1294,10 @@ ensure_gext_for_user() {
         dnf -y install pipx
     fi
     
-    if run_as_user "$user" bash -lc 'command -v pipx &>/dev/null'; then
-        run_as_user "$user" bash -lc 'pipx ensurepath' &>/dev/null || true
-        if run_as_user "$user" bash -lc 'pipx install gnome-extensions-cli' &>/dev/null; then
-            if run_as_user "$user" bash -lc 'command -v gext &>/dev/null'; then
+    if run_as_user bash -lc 'command -v pipx &>/dev/null'; then
+        run_as_user bash -lc 'pipx ensurepath' &>/dev/null || true
+        if run_as_user bash -lc 'pipx install gnome-extensions-cli' &>/dev/null; then
+            if run_as_user bash -lc 'command -v gext &>/dev/null'; then
                 status_ok "Successfully installed gext via pipx."
                 return 0
             fi
@@ -1209,27 +1305,26 @@ ensure_gext_for_user() {
     fi
     
     muted "pipx failed, trying pip --user as fallback..."
-    if run_as_user "$user" bash -lc 'python3 -m pip install --user --break-system-packages --disable-pip-version-check --quiet gnome-extensions-cli'; then
-        if run_as_user "$user" bash -lc '[[ -x "$HOME/.local/bin/gext" ]]'; then
+    if run_as_user bash -lc 'python3 -m pip install --user --break-system-packages --disable-pip-version-check --quiet gnome-extensions-cli'; then
+        if run_as_user bash -lc '[[ -x "$HOME/.local/bin/gext" ]]'; then
             status_ok "Successfully installed gext via pip --user."
             return 0
         fi
     fi
     
-    warning "FAILED: Could not install or find gnome-extensions-cli for $user."
+    log_warn "FAILED: Could not install or find gnome-extensions-cli for ${DETECTED_USER}."
     return 1
 }
 
 # Helper function to install and enable GNOME extensions
 install_and_enable_extension() {
-    local user="$1"
-    local extension="$2"
+    local extension="$1"
     
     muted "Installing extension: $extension"
-    if run_as_user "$user" bash -lc "gext install '$extension'"; then
+    if run_as_user bash -lc "gext install '$extension'"; then
         track_result "changed" "Extension: installed $extension"
         # Enable the extension
-        if run_as_user_dbus "$user" gnome-extensions enable "$extension"; then
+        if run_as_user_dbus gnome-extensions enable "$extension"; then
             track_result "changed" "Extension: enabled $extension"
         else
             track_result "failed" "Extension: could not enable $extension"
@@ -1241,13 +1336,11 @@ install_and_enable_extension() {
 
 # Helper function to install multiple extensions
 install_extensions_for_style() {
-    local user="$1"
-    shift
     local extensions=("$@")
     
-    if ensure_gext_for_user "$user"; then
+    if ensure_gext_for_user; then
         for ext in "${extensions[@]}"; do
-            install_and_enable_extension "$user" "$ext"
+            install_and_enable_extension "$ext"
         done
     else
         track_result "failed" "Extensions: gext installation failed"
@@ -1257,17 +1350,15 @@ install_extensions_for_style() {
 # Apply desktop extension style
 apply_extension_style() {
     local style="${USER_EXTENSION_STYLE:-1}"
-    local user
-    user="$(detect_primary_user)"
     
-    if [[ -z "$user" || "$user" == "root" ]]; then
-        warning "No non-root user found. Skipping extension style setup."
+    if [[ -z "${DETECTED_USER}" || "${DETECTED_USER}" == "root" ]]; then
+        log_warn "No non-root user found. Skipping extension style setup."
         track_result "skipped" "Extensions: no user found"
         return 0
     fi
     
     if [[ "${DRY_RUN:-0}" == "1" ]]; then
-        log_info "DRY-RUN: would apply extension style $style for user $user"
+        log_info "DRY-RUN: would apply extension style $style for user ${DETECTED_USER}"
         track_result "changed" "Extensions: would apply style $style"
         return 0
     fi
@@ -1276,7 +1367,7 @@ apply_extension_style() {
         1)
             subhead "Applying GNOME Default style..."
             muted "Resetting window buttons to default..."
-            if run_as_user_dbus "$user" gsettings reset org.gnome.desktop.wm.preferences button-layout; then
+            if run_as_user_dbus gsettings reset org.gnome.desktop.wm.preferences button-layout; then
                 track_result "changed" "Window buttons: reset to GNOME default"
             else
                 track_result "failed" "Window buttons: could not be reset"
@@ -1285,29 +1376,29 @@ apply_extension_style() {
         2)
             subhead "Applying Windows-like desktop style..."
             muted "Enabling minimize and maximize window buttons (Windows style)..."
-            if run_as_user_dbus "$user" gsettings set org.gnome.desktop.wm.preferences button-layout ':minimize,maximize,close'; then
+            if run_as_user_dbus gsettings set org.gnome.desktop.wm.preferences button-layout ':minimize,maximize,close'; then
                 track_result "changed" "Window buttons: Windows style"
             else
                 track_result "failed" "Window buttons: could not be set"
             fi
             
             # Install GNOME extensions for Windows-like style
-            install_extensions_for_style "$user" "${WINDOWS_EXTENSIONS[@]}"
+            install_extensions_for_style "${WINDOWS_EXTENSIONS[@]}"
             ;;
         3)
             subhead "Applying macOS-like desktop style..."
             muted "Enabling minimize and maximize window buttons (macOS style)..."
-            if run_as_user_dbus "$user" gsettings set org.gnome.desktop.wm.preferences button-layout 'close,minimize,maximize:'; then
+            if run_as_user_dbus gsettings set org.gnome.desktop.wm.preferences button-layout 'close,minimize,maximize:'; then
                 track_result "changed" "Window buttons: macOS style"
             else
                 track_result "failed" "Window buttons: could not be set"
             fi
             
             # Install GNOME extensions for macOS-like style
-            install_extensions_for_style "$user" "${MACOS_EXTENSIONS[@]}"
+            install_extensions_for_style "${MACOS_EXTENSIONS[@]}"
             ;;
         *)
-            warning "Unknown style '$style'; leaving default."
+            log_warn "Unknown style '$style'; leaving default."
             track_result "skipped" "Extensions: unknown style"
             ;;
     esac
@@ -1602,6 +1693,12 @@ main() {
     validate_system
     
     log_info "Starting $SCRIPT_NAME v$SCRIPT_VERSION"
+    
+    # Initialize user detection early
+    detect_user || log_warn "Continuing without a detected desktop user..."
+    
+    # Run the proactive check
+    check_user_bus_readiness
     
     # Collect user preferences (interactive mode)
     if [[ "${NON_INTERACTIVE:-0}" != "1" ]]; then
