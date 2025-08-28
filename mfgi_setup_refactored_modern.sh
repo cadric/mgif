@@ -215,7 +215,7 @@ emoji() { [[ "$NO_EMOJI" = 1 ]] && printf '' || printf '%s' "$1"; }
 # UI helper functions
 headline()     { printf '%s%s%s\n'    "${BOLD}${CYAN}" "$*" "$RESET" >&2; }
 subhead()      { printf '%s%s%s\n'    "$GREEN"    "$*" "$RESET" >&2; }
-emph()         { printf '%s%s%s\n'    "$MAGENTA"  "$*" "$RESET" >&2; }
+emph()         { printf '%s%s%s\n'    "$MAGENTA"  "*" "$RESET" >&2; }
 muted()        { local content; if [[ -p /dev/stdin ]]; then content=$(cat); else content="$*"; fi; printf '%s%s%s\n'    "$DIM"      "$content" "$RESET" >&2; }
 warning()      { local content; if [[ -p /dev/stdin ]]; then content=$(cat); else content="$*"; fi; printf '%s%s%s\n'    "${BOLD}${RED}" "$content" "$RESET" >&2; }
 hint()         { printf '%s%s%s\n'    "$YELLOW"   "$*" "$RESET" >&2; }
@@ -274,7 +274,8 @@ EOF
 
 # Dependency checking
 check_dependencies() {
-    local deps=("dnf" "systemctl" "tput" "su")
+    local deps=("dnf" "systemctl" "tput")
+    # run_as_user/spin_as_user needs su, sudo or runuser
     local optional_deps=("dbus-run-session")
     [[ "${DRY_RUN:-0}" = "1" ]] || deps+=("curl")
     local missing=()
@@ -365,10 +366,17 @@ run_as_user() {
     local user="$1"
     shift
     
-    if [[ -z "$user" || "$user" == "root" ]]; then
+    if [[ "$(id -u)" -eq 0 && "$user" == "root" ]] || [[ "$user" == "$(id -un)" ]]; then
         "$@"
-    else
-        # Build properly escaped command string
+        return $?
+    fi
+    
+    if command -v sudo >/dev/null 2>&1; then
+        sudo -n -u "$user" -- "$@"
+    elif command -v runuser >/dev/null 2>&1; then
+        runuser -u "$user" -- "$@"
+    elif command -v su >/dev/null 2>&1; then
+        # Build properly escaped command string for su -c
         local cmd_parts=()
         local arg
         for arg in "$@"; do
@@ -376,8 +384,12 @@ run_as_user() {
         done
         local cmd="${cmd_parts[*]}"
         su - "$user" -s /bin/bash -c "$cmd"
+    else
+        log_error "Cannot switch to user '$user': no sudo, runuser, or su available"
+        return 127
     fi
 }
+
 
 # Execute command as user with D-Bus session
 run_as_user_dbus() {
@@ -387,14 +399,7 @@ run_as_user_dbus() {
     if [[ -z "$user" || "$user" == "root" ]]; then
         dbus-run-session "$@"
     else
-        # Build properly escaped command string
-        local cmd_parts=()
-        local arg
-        for arg in "$@"; do
-            cmd_parts+=("$(printf '%q' "$arg")")
-        done
-        local cmd="${cmd_parts[*]}"
-        su - "$user" -s /bin/bash -c "dbus-run-session $cmd"
+        run_as_user "$user" dbus-run-session -- "$@"
     fi
 }
 
@@ -402,19 +407,22 @@ run_as_user_dbus() {
 run_with_spinner() {
     local msg="$1"
     shift
-    
     if [[ "${DRY_RUN:-0}" == "1" ]]; then
-        log_info "DRY-RUN: would execute: $*"
+        local __q=''
+        local __a
+        for __a in "$@"; do
+            printf -v __q '%s %q' "$__q" "$__a"
+        done
+        log_info "DRY-RUN: would execute:${__q}"
         return 0
     fi
-    
-    # In non-interactive mode, just run the command without spinner
     if [[ "${NON_INTERACTIVE:-0}" == "1" ]]; then
-        log_info "$msg..."
+        printf '%s... ' "$msg"
         "$@"
-        return $?
+        local rc=$?
+        printf '\n'
+        return $rc
     fi
-    
     local pid spin i
     printf '%s... ' "$msg"
     "$@" & pid=$!
@@ -430,6 +438,26 @@ run_with_spinner() {
     printf '\b'
     (( rc == 0 )) || printf '%sFAILED%s\n' "$RED" "$RESET" >&2
     return $rc
+}
+
+# Run a command as a given user, wrapped in a spinner
+spin_as_user() {
+  local user="$1"; shift
+  local msg="$1"; shift
+  # If we're already the correct user, no need for user-switching commands
+  if [[ "$(id -u)" -eq 0 && "$user" == "root" ]] || [[ "$user" == "$(id -un)" ]]; then
+    run_with_spinner "$msg" "$@"
+    return $?
+  fi
+  # Prefer sudo, fallback to runuser for portability
+  if command -v sudo >/dev/null 2>&1; then
+    run_with_spinner "$msg" sudo -n -u "$user" -- "$@"
+  elif command -v runuser >/dev/null 2>&1; then
+    run_with_spinner "$msg" runuser -u "$user" -- "$@"
+  else
+    log_error "Neither 'sudo' nor 'runuser' available to switch to user '$user'"
+    return 127
+  fi
 }
 
 # Safe file editing with backup
@@ -588,11 +616,11 @@ collect_user_preferences() {
     emph "Copyright 2025 Cadric"
     printf '\n'
     muted <<EOF
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so.
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, includin[...]
 EOF
     printf '\n'
     warning <<EOF
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT[...]
 EOF
     printf '\n'
     
@@ -900,9 +928,9 @@ install_curated_flatpaks() {
         track_result "skipped" "Curated Flatpaks: not selected"
         return 0
     fi
-    
+
     subhead "Installing curated Flatpak applications..."
-    
+
     local apps=(
         "org.gnome.Calculator"
         "org.gnome.Showtime"
@@ -914,44 +942,52 @@ install_curated_flatpaks() {
         "io.github.flattool.Ignition"
         "com.mattjakeman.ExtensionManager"
     )
-    
-    local install_cmd_prefix="flatpak install -y"
-    local install_user=""
-    
+
+    local install_user
+    local scope_args=()
+    local info_scope=()
+
     if [[ "${USER_FLATPAK_SCOPE:-2}" == "1" ]]; then
-        install_cmd_prefix+=" --system flathub"
         install_user="root"
+        scope_args=(--system)
+        info_scope=(--system)
     else
-        install_cmd_prefix+=" --user flathub"
         install_user="$(detect_primary_user)"
+        # Be explicit: both info and install go to user scope
+        info_scope=(--user)
+        scope_args=(--user)
     fi
-    
-    # Export function so sub-shells can access it
-    export -f run_with_spinner
-    
+
     for app in "${apps[@]}"; do
-        muted "Installing $app..."
-        
         if [[ "${DRY_RUN:-0}" == "1" ]]; then
             log_info "DRY-RUN: would install $app"
             track_result "changed" "Flatpak: would install $app"
             continue
         fi
+
+        # Proactive check: Skip if already installed
+        if run_as_user "$install_user" flatpak info "${info_scope[@]}" "$app" >/dev/null 2>&1; then
+            track_result "skipped" "Flatpak: already installed $app"
+            continue
+        fi
+
+        muted "Installing $app..."
         
-        if run_as_user "$install_user" bash -c "run_with_spinner 'Installing ${app}' ${install_cmd_prefix} ${app}"; then
-            track_result "changed" "Flatpak: installed $app"
+        local remote=${FLATPAK_REMOTE:-flathub}
+        if spin_as_user "$install_user" "Installing $app" \
+                flatpak install -y --noninteractive "${scope_args[@]}" "$remote" "$app" --or-update; then
+            track_result "changed" "Flatpak: installed/updated $app"
         else
-            if run_as_user "$install_user" flatpak info "$app" >/dev/null 2>&1; then
-                track_result "skipped" "Flatpak: already installed $app"
+            # If installation fails, re-check existence to provide accurate status
+            if run_as_user "$install_user" flatpak info "${info_scope[@]}" "$app" >/dev/null 2>&1; then
+                track_result "skipped" "Flatpak: present after failed attempt on $app"
             else
                 track_result "failed" "Flatpak: could not install $app"
             fi
         fi
     done
-    
-    # Clean up exported function
-    export -f -n run_with_spinner
 }
+
 
 # Wallpaper installation
 png_signature_ok() {
@@ -1295,39 +1331,31 @@ enable_services() {
     track_result "changed" "System target set to 'graphical'"
 }
 
-# Helper function to update or add configuration lines
-_update_or_add_line() {
-    local file="$1"
-    local key="$2"
-    local value="$3"
-    
-    # Smart sed command that either updates existing line or adds new one
-    # If line with key= exists, replace it; otherwise append at end
-    sed -i -e "/^${key}=/c\\${key}=${value}" -e "\$a\\${key}=${value}" "$file"
-    # Remove duplicate lines that might have been created
-    sed -i "/^${key}=/h; /^${key}=/d; \${x; /^${key}=/p;}" "$file"
-}
-
 # GRUB configuration edit function
 _edit_grub_config() {
     local grub_file="$1"
     
-    # Helper function to update or add configuration lines
-    update_line() {
-        local file="$1"
-        local key="$2" 
-        local value="$3"
-        if grep -q "^${key}=" "$file"; then
-            sed -i "s|^${key}=.*|${key}=${value}|" "$file" || return 1
+    # Helper to update a line or add it if it's missing.
+    # Uses # as a separator to avoid conflicts with paths in values.
+    update_or_add() {
+        local key="$1"
+        local value="$2"
+        # Check if the line (commented or not) exists
+        if grep -qE "^\s*#?\s*${key}=" "$grub_file"; then
+            # Update existing line, removing any leading comment
+            sed -i.bak "s|^\s*#*\s*${key}=.*|${key}=${value}|" "$grub_file"
         else
-            echo "${key}=${value}" >> "$file" || return 1
+            # Add the line at the end of the file
+            printf '\n%s=%s\n' "$key" "$value" >> "$grub_file"
         fi
+        return $?
     }
     
-    # Update GRUB configuration parameters - fail on any error
-    update_line "$grub_file" "GRUB_TIMEOUT_STYLE" "hidden" || return 1
-    update_line "$grub_file" "GRUB_TIMEOUT" "0" || return 1
-    update_line "$grub_file" "GRUB_RECORDFAIL_TIMEOUT" "0" || return 1
+    update_or_add "GRUB_TIMEOUT_STYLE" "hidden" || return 1
+    update_or_add "GRUB_TIMEOUT" "0" || return 1
+    update_or_add "GRUB_RECORDFAIL_TIMEOUT" "0" || return 1
+    
+    return 0
 }
 
 # GRUB configuration
@@ -1348,7 +1376,10 @@ configure_grub() {
     local grub_file="/etc/default/grub"
     touch "$grub_file"
     
-    safe_edit_file "$grub_file" _edit_grub_config
+    if ! safe_edit_file "$grub_file" _edit_grub_config; then
+        track_result "failed" "GRUB: failed to edit $grub_file"
+        return 1
+    fi
     
     status_ok "GRUB default file updated: $grub_file"
     
@@ -1410,12 +1441,13 @@ run_installation() {
         log_info "[$step_number/$total_steps] Executing step: $step"
         if ! "$step"; then
             log_error "Step failed: $step"
-            return 1
+            # In a real-world scenario, you might want to stop here.
+            # For this script, we'll continue to report all failures.
         fi
         ((step_number++))
     done
     
-    log_info "Installation completed successfully"
+    log_info "Installation run completed"
 }
 
 # Argument parsing
@@ -1577,9 +1609,7 @@ main() {
     fi
     
     # Run installation
-    if ! run_installation; then
-        die "Installation failed"
-    fi
+    run_installation
     
     # Show summary
     print_summary
@@ -1594,9 +1624,15 @@ main() {
     fi
     
     # Final message
-    printf '\n'
-    headline "mfgi v18 installation completed! $(emoji "🎉")"
-    status_ok "The system is now configured. A reboot is required to see all changes."
+    if (( ${#FAILED_ITEMS[@]} > 0 )); then
+        printf '\n'
+        warning "mfgi v18 installation completed with ${#FAILED_ITEMS[@]} failure(s). $(emoji "🤔")"
+        status_fail "Please review the summary and log file for details."
+    else
+        printf '\n'
+        headline "mfgi v18 installation completed! $(emoji "🎉")"
+        status_ok "The system is now configured. A reboot is required to see all changes."
+    fi
     
     if [[ -n "$LOG_FILE" && -f "$LOG_FILE" ]]; then
         muted "A full log of this session was saved to: $LOG_FILE"
@@ -1623,4 +1659,7 @@ main() {
     fi
 }
 
-main "$@"
+# Only run main if not being sourced
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
+fi
