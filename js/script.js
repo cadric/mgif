@@ -219,7 +219,7 @@ class FedoraInstallerUI {
                     // Collect step
                     const stepId = targetSection.getAttribute('data-step');
                     if (stepId && this.#stepTitles[stepId]) {
-                        this.#collectStep(stepId, this.#stepTitles[stepId]);
+                        this.#collectStep(stepId, this.#stepTitles[stepId], sectionIndex);
                     }
                 }
             }
@@ -238,8 +238,9 @@ class FedoraInstallerUI {
      * Collect step function with enhanced error handling
      * @param {string} stepId - The step identifier
      * @param {string} title - The step title
+     * @param {number} sectionIndex - The index of the section being collected
      */
-    #collectStep(stepId, title) {
+    #collectStep(stepId, title, sectionIndex) {
         try {
             // Check if step already exists
             const existingStep = this.#collectedSteps.querySelector(`[data-step-id="${stepId}"]`);
@@ -252,7 +253,7 @@ class FedoraInstallerUI {
             const stepElement = document.createElement('button');
             stepElement.className = 'collected-step';
             stepElement.setAttribute('data-step-id', stepId);
-            stepElement.setAttribute('data-step-index', this.#currentSectionIndex);
+            stepElement.setAttribute('data-step-index', sectionIndex);
             stepElement.setAttribute('aria-label', `Go to ${title}`);
             stepElement.textContent = title;
 
@@ -329,10 +330,10 @@ class FedoraInstallerUI {
      */
     #updateProgressBar() {
         try {
-            // Calculate progress: -1 (hero) = 0%, sections 0 to n-1 = distributed
-            const totalSteps = this.#sections.length + 1; // +1 for hero
-            const currentStep = this.#currentSectionIndex + 2; // +2 to account for hero at -1
-            const progress = Math.min((currentStep / totalSteps) * 100, 100);
+            // Calculate progress: hero (-1) = 0%, sections (0 to n-1) = evenly distributed
+            const totalSteps = this.#sections.length; // Total sections is the number of steps
+            const currentStep = this.#currentSectionIndex; // hero is -1, first section is 0
+            const progress = Math.max(0, Math.min(((currentStep + 1) / totalSteps) * 100, 100));
 
             if (this.#progressFill) {
                 this.#progressFill.style.width = `${progress}%`;
