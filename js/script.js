@@ -4,6 +4,12 @@
  * @description Provides page transitions, step collection, and navigation features
  */
 
+// Configuration and debugging
+const DEBUG = false;
+const log = (...args) => DEBUG && console.log(...args);
+const warn = (...args) => DEBUG && console.warn(...args);
+const error = console.error.bind(console); // Always log errors
+
 /**
  * Main application class for handling website interactions
  */
@@ -27,23 +33,30 @@ class FedoraInstallerUI {
     #cursorAnimationId = null;
     #isCursorActive = false;
     
+    // Accessibility and motion preferences
+    #prefersReducedMotion = false;
+    
     // Step titles mapping for collection
-#stepTitles = {
-  'intro': 'Introduction',
-  '1': 'Download Fedora Everything',
-  '2': 'Login and Switch to Root',
-  '3': 'Execute the Installation Script',
-  '4': 'Answer Configuration Questions',
-  '5': 'Enjoy Your New Desktop'
-};
+    #stepTitles = {
+      'intro': 'Introduction',
+      '1': 'Download Fedora Everything',
+      '2': 'Login and Switch to Root',
+      '3': 'Execute the Installation Script',
+      '4': 'Answer Configuration Questions',
+      '5': 'Enjoy Your New Desktop'
+    };
 
 
     constructor() {
+        // Detect user preferences
+        this.#prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+        
         this.#initializeElements();
         this.#setupPageTransitions();
         this.#initializeCursorArrow();
         this.#bindEvents();
         this.#initialize();
+        this.#setupHistoryAPI();
     }
 
     /**
@@ -60,13 +73,23 @@ class FedoraInstallerUI {
                 throw new Error('Required DOM elements not found');
             }
 
+            // Ensure progress bar has proper ARIA attributes
+            const progressBar = this.#progressFill.closest('.progress-bar');
+            if (progressBar && !progressBar.hasAttribute('role')) {
+                progressBar.setAttribute('role', 'progressbar');
+                progressBar.setAttribute('aria-valuemin', '0');
+                progressBar.setAttribute('aria-valuemax', '100');
+                progressBar.setAttribute('aria-valuenow', '0');
+                progressBar.setAttribute('aria-label', 'Installation progress');
+            }
+
             // Hide all sections initially except hero
             this.#sections.forEach(section => {
                 section.classList.remove('visible', 'active');
             });
 
         } catch (error) {
-            console.error('Failed to initialize DOM elements:', error);
+            error('Failed to initialize DOM elements:', error);
             throw error;
         }
     }
@@ -94,7 +117,7 @@ class FedoraInstallerUI {
             this.#cursorTarget = document.getElementById('hero-scroll-target');
             
             if (!this.#cursorCanvas || !this.#cursorTarget) {
-                console.warn('Cursor arrow elements not found - skipping cursor arrow initialization');
+                warn('Cursor arrow elements not found - skipping cursor arrow initialization');
                 return;
             }
 
@@ -116,11 +139,16 @@ class FedoraInstallerUI {
                 }
             });
 
-            // Hide cursor arrow when mouse leaves window or hero becomes inactive
+            // Hide cursor arrow when mouse leaves window, hero becomes inactive, or page is hidden
             document.addEventListener('mouseleave', () => this.#stopCursorAnimation());
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) {
+                    this.#stopCursorAnimation();
+                }
+            });
             
         } catch (error) {
-            console.error('Failed to initialize cursor arrow:', error);
+            error('Failed to initialize cursor arrow:', error);
         }
     }
 
@@ -136,8 +164,13 @@ class FedoraInstallerUI {
             });
         });
 
-        // Keyboard navigation
+        // Keyboard navigation - improved focus handling
         document.addEventListener('keydown', (e) => {
+            // Skip if inside form elements or content editable
+            if (e.target.matches('input, textarea, select, [contenteditable="true"]')) {
+                return;
+            }
+            
             switch(e.key) {
                 case 'ArrowDown':
                 case ' ':
@@ -148,43 +181,60 @@ class FedoraInstallerUI {
                     e.preventDefault();
                     this.#goToPreviousSection();
                     break;
+                case 'Home':
+                    e.preventDefault();
+                    this.#goToSection(-1); // Go to hero
+                    break;
+                case 'End':
+                    e.preventDefault();
+                    this.#goToSection(this.#sections.length - 1); // Go to last section
+                    break;
             }
         });
 
-        // Touch/swipe events
+        // Touch/swipe events with improved dead zones and angle detection
         document.addEventListener('touchstart', (e) => {
+            if (!e.touches?.length) return;
             this.#touchStartY = e.touches[0].clientY;
             this.#touchStartX = e.touches[0].clientX;
         }, { passive: true });
 
         document.addEventListener('touchmove', (e) => {
-            // Prevent default scrolling
+            // Only prevent default if we're doing page transitions, not in scrollable areas
+            if (this.#isFromScrollableElement(e.target)) return;
             e.preventDefault();
         }, { passive: false });
 
         document.addEventListener('touchend', (e) => {
-            if (this.#isTransitioning) return;
+            if (this.#isTransitioning || !e.changedTouches?.length) return;
 
             const touchEndY = e.changedTouches[0].clientY;
             const touchEndX = e.changedTouches[0].clientX;
             const deltaY = this.#touchStartY - touchEndY;
-            const deltaX = Math.abs(this.#touchStartX - touchEndX);
+            const deltaX = this.#touchStartX - touchEndX;
 
-            // Only trigger if vertical swipe is dominant
-            if (Math.abs(deltaY) > 50 && deltaX < 100) {
-                if (deltaY > 0) {
-                    // Swipe up - go to next section
-                    this.#goToNextSection();
-                } else {
-                    // Swipe down - go to previous section
-                    this.#goToPreviousSection();
-                }
+            // Dead zone and angle check to avoid accidental swipes
+            const minDistance = 24;
+            const absDeltaY = Math.abs(deltaY);
+            const absDeltaX = Math.abs(deltaX);
+            
+            if (absDeltaY < minDistance || absDeltaX > absDeltaY) {
+                return; // Not a clear vertical swipe
+            }
+
+            if (deltaY > 0) {
+                // Swipe up - go to next section
+                this.#goToNextSection();
+            } else {
+                // Swipe down - go to previous section
+                this.#goToPreviousSection();
             }
         }, { passive: true });
 
-        // Mouse wheel navigation
+        // Mouse wheel navigation with scrollable element detection
         document.addEventListener('wheel', (e) => {
             if (this.#isTransitioning) return;
+            if (this.#isFromScrollableElement(e.target)) return;
             
             e.preventDefault();
             
@@ -197,16 +247,32 @@ class FedoraInstallerUI {
             }
         }, { passive: false });
 
-        // Collected steps navigation
+        // Collected steps navigation with defensive parsing
         document.addEventListener('click', (e) => {
             if (e.target.closest('.collected-step')) {
                 const stepElement = e.target.closest('.collected-step');
-                const stepIndex = parseInt(stepElement.dataset.stepIndex);
-                if (!isNaN(stepIndex)) {
-                    this.#goToSection(stepIndex);
+                const stepIndex = stepElement.dataset.stepIndex;
+                const parsedIndex = Number.isInteger(+stepIndex) ? +stepIndex : null;
+                
+                if (parsedIndex !== null && parsedIndex >= -1 && parsedIndex < this.#sections.length) {
+                    this.#goToSection(parsedIndex);
                 }
             }
         });
+        
+        // History API support
+        window.addEventListener('popstate', (e) => {
+            this.#handleHistoryNavigation();
+        });
+    }
+
+    /**
+     * Check if event originated from a scrollable element
+     * @param {Element} target - Event target
+     * @returns {boolean} - True if from scrollable element
+     */
+    #isFromScrollableElement(target) {
+        return target && target.closest('pre, code, textarea, .scroll, [data-scrollable="true"], .video-showcase');
     }
 
     /**
@@ -259,6 +325,9 @@ class FedoraInstallerUI {
             }
         }
 
+        // Update history API
+        this.#updateHistory(sectionIndex);
+
         // Show target section/hero
         setTimeout(() => {
             if (sectionIndex === -1) {
@@ -286,6 +355,99 @@ class FedoraInstallerUI {
                 this.#isTransitioning = false;
             }, 300);
         }, 100);
+    }
+
+    /**
+     * Setup History API for deep linking and browser navigation
+     */
+    #setupHistoryAPI() {
+        try {
+            // Initialize from current hash if present
+            const hash = window.location.hash;
+            if (hash) {
+                const sectionIndex = this.#getSectionIndexFromHash(hash);
+                if (sectionIndex !== null && sectionIndex !== this.#currentSectionIndex) {
+                    // Navigate to the section without animation initially
+                    this.#currentSectionIndex = sectionIndex;
+                    this.#goToSection(sectionIndex);
+                }
+            }
+        } catch (error) {
+            warn('Failed to setup history API:', error);
+        }
+    }
+
+    /**
+     * Update browser history
+     * @param {number} sectionIndex - Current section index
+     */
+    #updateHistory(sectionIndex) {
+        try {
+            let hash = '';
+            if (sectionIndex === -1) {
+                hash = '';
+            } else {
+                const section = this.#sections[sectionIndex];
+                const stepId = section?.getAttribute('data-step');
+                if (stepId) {
+                    hash = stepId === 'intro' ? '#intro' : `#step-${stepId}`;
+                }
+            }
+            
+            const currentHash = window.location.hash;
+            if (hash !== currentHash) {
+                history.replaceState(null, '', hash);
+            }
+        } catch (error) {
+            warn('Failed to update history:', error);
+        }
+    }
+
+    /**
+     * Handle browser back/forward navigation
+     */
+    #handleHistoryNavigation() {
+        try {
+            const hash = window.location.hash;
+            const sectionIndex = this.#getSectionIndexFromHash(hash);
+            
+            if (sectionIndex !== null && sectionIndex !== this.#currentSectionIndex) {
+                this.#goToSection(sectionIndex);
+            }
+        } catch (error) {
+            warn('Failed to handle history navigation:', error);
+        }
+    }
+
+    /**
+     * Get section index from URL hash
+     * @param {string} hash - URL hash
+     * @returns {number|null} - Section index or null if invalid
+     */
+    #getSectionIndexFromHash(hash) {
+        if (!hash || hash === '#') return -1; // Hero
+        
+        if (hash === '#intro') {
+            // Find intro section
+            for (let i = 0; i < this.#sections.length; i++) {
+                if (this.#sections[i].getAttribute('data-step') === 'intro') {
+                    return i;
+                }
+            }
+        }
+        
+        const stepMatch = hash.match(/^#step-(\d+)$/);
+        if (stepMatch) {
+            const stepNumber = stepMatch[1];
+            // Find section with matching step number
+            for (let i = 0; i < this.#sections.length; i++) {
+                if (this.#sections[i].getAttribute('data-step') === stepNumber) {
+                    return i;
+                }
+            }
+        }
+        
+        return null;
     }
 
     /**
@@ -320,23 +482,21 @@ class FedoraInstallerUI {
                 }
             });
 
-            // Add step with animation
-            stepElement.style.opacity = '0';
-            stepElement.style.transform = 'translateX(-20px)';
+            // Add step with animation using CSS classes instead of inline styles
+            stepElement.classList.add('collected-step-entering');
             this.#collectedSteps.appendChild(stepElement);
 
-            // Animate in
+            // Animate in using CSS transition
             requestAnimationFrame(() => {
-                stepElement.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-                stepElement.style.opacity = '1';
-                stepElement.style.transform = 'translateX(0)';
+                stepElement.classList.remove('collected-step-entering');
+                stepElement.classList.add('collected-step-entered');
             });
 
             // Highlight the new step
             setTimeout(() => this.#highlightElement(stepElement), 100);
 
         } catch (error) {
-            console.error('Failed to collect step:', error);
+            error('Failed to collect step:', error);
         }
     }
 
@@ -367,51 +527,57 @@ class FedoraInstallerUI {
      */
     #addHoverEffects(element) {
         try {
-            element.addEventListener('mouseenter', () => {
-                element.style.transform = 'translateY(-2px) scale(1.05)';
-            });
-            
-            element.addEventListener('mouseleave', () => {
-                element.style.transform = 'translateY(0) scale(1)';
-            });
+            // Use CSS classes instead of inline styles for hover effects
+            element.classList.add('has-hover-effects');
         } catch (error) {
-            console.error('Failed to add hover effects:', error);
+            error('Failed to add hover effects:', error);
         }
     }
 
     /**
      * Update progress bar based on current section
      */
-// Erstat hele metoden #updateProgressBar() med denne
-#updateProgressBar() {
-  try {
-    // Find samlede antal reelle steps (ignorer intro)
-    const stepSections = Array.from(this.#sections)
-      .filter(s => s.dataset.step && s.dataset.step !== 'intro');
-    const totalSteps = stepSections.length; // typisk 5
+    #updateProgressBar() {
+        try {
+            // Find total number of real steps (ignore intro)
+            const stepSections = Array.from(this.#sections)
+                .filter(s => s.dataset.step && s.dataset.step !== 'intro');
+            const totalSteps = stepSections.length; // typically 5
 
-    // Beregn aktuelt step-nummer
-    let currentStepNumber = 0; // 0 = Hero/Intro
-    if (this.#currentSectionIndex >= 0) {
-      const active = this.#sections[this.#currentSectionIndex];
-      const id = active?.dataset?.step ?? null;
-      if (id && id !== 'intro') currentStepNumber = parseInt(id, 10) || 0;
+            // Calculate current step number
+            let currentStepNumber = 0; // 0 = Hero/Intro
+            if (this.#currentSectionIndex >= 0) {
+                const active = this.#sections[this.#currentSectionIndex];
+                const id = active?.dataset?.step ?? null;
+                if (id && id !== 'intro') {
+                    const parsed = parseInt(id, 10);
+                    currentStepNumber = Number.isInteger(parsed) ? parsed : 0;
+                }
+            }
+
+            // Progress: 0% on hero/intro, 100% on step 5
+            const progress = totalSteps > 0
+                ? Math.min(100, Math.max(0, (currentStepNumber / totalSteps) * 100))
+                : 0;
+
+            if (this.#progressFill) {
+                this.#progressFill.style.width = `${progress}%`;
+                
+                const progressBar = this.#progressFill.closest('.progress-bar');
+                if (progressBar) {
+                    progressBar.setAttribute('aria-valuenow', String(Math.round(progress)));
+                    
+                    // Update aria-valuetext for better screen reader experience
+                    const stepText = currentStepNumber > 0 
+                        ? `Step ${currentStepNumber} of ${totalSteps}`
+                        : 'Getting started';
+                    progressBar.setAttribute('aria-valuetext', stepText);
+                }
+            }
+        } catch (error) {
+            error('Failed to update progress bar:', error);
+        }
     }
-
-    // Progress: 0% på hero/intro, 100% på step 5
-    const progress = totalSteps > 0
-      ? (currentStepNumber / totalSteps) * 100
-      : 0;
-
-    if (this.#progressFill) {
-      this.#progressFill.style.width = `${Math.max(0, Math.min(progress, 100))}%`;
-      const progressBar = this.#progressFill.closest('.progress-bar');
-      if (progressBar) progressBar.setAttribute('aria-valuenow', String(Math.round(progress)));
-    }
-  } catch (error) {
-    console.error('Failed to update progress bar:', error);
-  }
-}
 
 
     /**
@@ -425,7 +591,8 @@ class FedoraInstallerUI {
             // Set up loading detection
             const handleVideoLoad = () => {
                 video.setAttribute('data-loaded', 'true');
-                console.log('📺 Showcase video loaded successfully');
+                video.setAttribute('aria-busy', 'false');
+                log('Showcase video loaded successfully');
             };
 
             // Handle load events
@@ -435,11 +602,14 @@ class FedoraInstallerUI {
             } else {
                 video.addEventListener('loadeddata', handleVideoLoad, { once: true });
                 video.addEventListener('canplaythrough', handleVideoLoad, { once: true });
+                video.addEventListener('loadedmetadata', () => {
+                    video.setAttribute('aria-busy', 'false');
+                }, { once: true });
             }
 
             // Error handling
             video.addEventListener('error', (error) => {
-                console.error('Video failed to load:', error);
+                error('Video failed to load:', error);
                 this.#handleVideoError(video);
             }, { once: true });
 
@@ -450,7 +620,7 @@ class FedoraInstallerUI {
             this.#respectUserPreferences(video);
 
         } catch (error) {
-            console.error('Failed to initialize showcase video:', error);
+            error('Failed to initialize showcase video:', error);
             this.#handleVideoError(video);
         }
     }
@@ -504,12 +674,13 @@ class FedoraInstallerUI {
         const pauseIcon = playPauseBtn.querySelector('.pause-icon');
 
         if (isPlaying) {
-            playIcon.style.display = 'none';
-            pauseIcon.style.display = 'block';
+            // Use CSS classes instead of inline styles
+            playIcon?.classList.add('hidden');
+            pauseIcon?.classList.remove('hidden');
             playPauseBtn.setAttribute('aria-label', 'Pause video');
         } else {
-            playIcon.style.display = 'block';
-            pauseIcon.style.display = 'none';
+            playIcon?.classList.remove('hidden');
+            pauseIcon?.classList.add('hidden');
             playPauseBtn.setAttribute('aria-label', 'Play video');
         }
     }
@@ -526,12 +697,13 @@ class FedoraInstallerUI {
         const mutedIcon = muteBtn.querySelector('.muted-icon');
 
         if (isMuted) {
-            volumeIcon.style.display = 'none';
-            mutedIcon.style.display = 'block';
+            // Use CSS classes instead of inline styles
+            volumeIcon?.classList.add('hidden');
+            mutedIcon?.classList.remove('hidden');
             muteBtn.setAttribute('aria-label', 'Unmute video');
         } else {
-            volumeIcon.style.display = 'block';
-            mutedIcon.style.display = 'none';
+            volumeIcon?.classList.remove('hidden');
+            mutedIcon?.classList.add('hidden');
             muteBtn.setAttribute('aria-label', 'Mute video');
         }
     }
@@ -542,20 +714,23 @@ class FedoraInstallerUI {
      */
     #respectUserPreferences(video) {
         // Respect prefers-reduced-motion
-        if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
-            video.pause();
+        if (this.#prefersReducedMotion) {
+            video.setAttribute('preload', 'metadata');
             video.removeAttribute('autoplay');
-            console.log('🎬 Video autoplay disabled due to user motion preferences');
+            this.#addVideoPlayButton(video);
         }
 
         // Respect data saver preferences (if supported)
         if (navigator.connection?.saveData) {
-            video.preload = 'none';
-            video.pause();
+            video.setAttribute('preload', 'none');
             video.removeAttribute('autoplay');
-            console.log('📡 Video preload disabled due to data saver preference');
-            
-            // Add a play button overlay for data saver users
+            this.#addVideoPlayButton(video);
+        }
+
+        // iOS autoplay gate - require user interaction
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        if (isIOS && video.hasAttribute('autoplay')) {
+            video.removeAttribute('autoplay');
             this.#addVideoPlayButton(video);
         }
     }
@@ -565,56 +740,41 @@ class FedoraInstallerUI {
      * @param {HTMLVideoElement} video 
      */
     #addVideoPlayButton(video) {
+        // Create play button using createElement for CSP compliance
         const playButton = document.createElement('button');
-        playButton.innerHTML = `
-            <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M8 5v14l11-7z"/>
-            </svg>
-            <span>Play Installation Demo</span>
-        `;
         playButton.className = 'video-play-button';
-        playButton.style.cssText = `
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(59, 130, 246, 0.9);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            padding: 16px 24px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            transition: all 0.2s ease;
-            backdrop-filter: blur(8px);
-            z-index: 10;
-        `;
+        playButton.setAttribute('aria-label', 'Play installation demo video');
+        
+        // Create SVG icon
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('width', '64');
+        svg.setAttribute('height', '64');
+        svg.setAttribute('viewBox', '0 0 24 24');
+        svg.setAttribute('fill', 'currentColor');
+        svg.setAttribute('aria-hidden', 'true');
+        
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', 'M8 5v14l11-7z');
+        svg.appendChild(path);
+        
+        const span = document.createElement('span');
+        span.textContent = 'Play Installation Demo';
+        
+        playButton.appendChild(svg);
+        playButton.appendChild(span);
 
-        // Add hover effect
-        playButton.addEventListener('mouseenter', () => {
-            playButton.style.transform = 'translate(-50%, -50%) scale(1.05)';
-            playButton.style.background = 'rgba(59, 130, 246, 1)';
-        });
-
-        playButton.addEventListener('mouseleave', () => {
-            playButton.style.transform = 'translate(-50%, -50%) scale(1)';
-            playButton.style.background = 'rgba(59, 130, 246, 0.9)';
-        });
-
-        // Handle click
+        // Handle click - no inline event handlers
         playButton.addEventListener('click', () => {
-            video.play();
+            video.play().catch(error => {
+                error('Video play failed:', error);
+                this.#showErrorToast('Failed to play video. Please try again.');
+            });
             playButton.remove();
         });
 
         // Add button to video container
         const videoContainer = video.closest('.video-showcase');
         if (videoContainer) {
-            videoContainer.style.position = 'relative';
             videoContainer.appendChild(playButton);
         }
     }
@@ -627,35 +787,74 @@ class FedoraInstallerUI {
         const videoContainer = video.closest('.video-showcase');
         if (!videoContainer) return;
 
-        // Create fallback content
+        // Create fallback content using createElement for CSP compliance
         const fallback = document.createElement('div');
         fallback.className = 'video-fallback';
-        fallback.innerHTML = `
-            <div class="video-fallback-content">
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor" opacity="0.5">
-                    <path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8 12.5v-9l6 4.5-6 4.5z"/>
-                </svg>
-                <h3>Installation Demo</h3>
-                <p>Experience the smooth, automated Fedora GNOME installation process.</p>
-                <a href="https://ifg.sh/showcase.mp4" target="_blank" rel="noopener noreferrer" class="fallback-link">
-                    View Demo Video →
-                </a>
-            </div>
-        `;
+        
+        const content = document.createElement('div');
+        content.className = 'video-fallback-content';
+        
+        // Create SVG icon
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('width', '64');
+        svg.setAttribute('height', '64');
+        svg.setAttribute('viewBox', '0 0 24 24');
+        svg.setAttribute('fill', 'currentColor');
+        svg.style.opacity = '0.5';
+        
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', 'M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8 12.5v-9l6 4.5-6 4.5z');
+        svg.appendChild(path);
+        
+        const title = document.createElement('h3');
+        title.textContent = 'Installation Demo';
+        
+        const description = document.createElement('p');
+        description.textContent = 'Experience the smooth, automated Fedora GNOME installation process.';
+        
+        const link = document.createElement('a');
+        link.href = 'https://ifg.sh/showcase.mp4';
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.className = 'fallback-link';
+        link.textContent = 'View Demo Video →';
+        
+        content.appendChild(svg);
+        content.appendChild(title);
+        content.appendChild(description);
+        content.appendChild(link);
+        fallback.appendChild(content);
 
-        fallback.style.cssText = `
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 300px;
-            background: var(--color-bg-secondary);
-            border-radius: var(--radius-lg);
-            text-align: center;
-            color: var(--color-text-secondary);
-        `;
+        // Apply fallback styles via CSS classes instead of inline styles
+        fallback.classList.add('video-error-fallback');
 
         // Replace video with fallback
         video.replaceWith(fallback);
+    }
+
+    /**
+     * Show error toast notification
+     * @param {string} message - Error message to display
+     */
+    #showErrorToast(message) {
+        // Create or reuse existing toast
+        let toast = document.querySelector('.toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.className = 'toast toast-error';
+            toast.setAttribute('hidden', '');
+            document.body.appendChild(toast);
+        }
+        
+        toast.textContent = message;
+        toast.classList.remove('toast-success');
+        toast.classList.add('toast-error');
+        toast.removeAttribute('hidden');
+        
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            toast.setAttribute('hidden', '');
+        }, 5000);
     }
 
     /**
@@ -664,7 +863,7 @@ class FedoraInstallerUI {
     #initialize() {
         this.#updateProgressBar();
         this.#initializeShowcaseVideo();
-        console.log('✨ Fedora GNOME installer website loaded with page transitions!');
+        log('Fedora GNOME installer website loaded with page transitions!');
     }
 
     /**
@@ -806,10 +1005,21 @@ class FedoraInstallerUI {
      */
     destroy() {
         try {
+            // Stop cursor animation
             this.#stopCursorAnimation();
+            
+            // Clear timeouts
             clearTimeout(this.#scrollIndicatorTimeout);
+            
+            // Remove toast if it exists
+            const toast = document.querySelector('.toast');
+            if (toast) {
+                toast.remove();
+            }
+            
+            log('FedoraInstallerUI destroyed successfully');
         } catch (error) {
-            console.error('Failed to cleanup FedoraInstallerUI:', error);
+            error('Failed to cleanup FedoraInstallerUI:', error);
         }
     }
 }
@@ -819,8 +1029,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
         // Feature detection for required APIs
         if (!('requestAnimationFrame' in window)) {
-            console.warn('requestAnimationFrame not supported. Some features may not work.');
-            return;
+            throw new Error('RequestAnimationFrame not supported');
         }
 
         // Initialize the main application
@@ -833,27 +1042,10 @@ document.addEventListener('DOMContentLoaded', () => {
         initializeProgressiveEnhancements();
         
     } catch (error) {
-        console.error('Failed to initialize Fedora Installer UI:', error);
-        // Provide user-friendly error message
-        const errorDiv = document.createElement('div');
-        errorDiv.textContent = 'Something went wrong loading the page. Please refresh and try again.';
-        errorDiv.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: #ef4444;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 8px;
-            z-index: 9999;
-            font-family: system-ui, sans-serif;
-        `;
-        document.body.appendChild(errorDiv);
+        error('Failed to initialize Fedora Installer UI:', error);
         
-        // Auto-remove error message after 5 seconds
-        setTimeout(() => {
-            errorDiv.remove();
-        }, 5000);
+        // Show user-friendly error message using toast
+        showErrorToast('Something went wrong loading the page. Please refresh and try again.');
     }
 });
 
@@ -875,13 +1067,12 @@ function initializeProgressiveEnhancements() {
         const text = codeBlock?.innerText || codeBlock?.textContent || '';
         
         if (!text.trim()) {
-            console.warn('No text content found to copy');
+            showCopyFeedback(btn, false);
             return;
         }
         
         // Feature detection for clipboard API
         if (!navigator.clipboard?.writeText) {
-            // Fallback for older browsers
             fallbackCopyText(text, btn);
             return;
         }
@@ -890,7 +1081,7 @@ function initializeProgressiveEnhancements() {
         navigator.clipboard.writeText(text).then(() => {
             showCopyFeedback(btn, true);
         }).catch((error) => {
-            console.warn('Clipboard API failed, trying fallback:', error);
+            warn('Clipboard API failed, falling back:', error);
             fallbackCopyText(text, btn);
         });
     });
@@ -898,42 +1089,36 @@ function initializeProgressiveEnhancements() {
     // Smooth skip-link focus handling for accessibility
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', (e) => {
-            const href = anchor.getAttribute('href');
-            if (!href || href === '#') return;
+            const targetId = anchor.getAttribute('href').slice(1);
+            const targetElement = targetId ? document.getElementById(targetId) : null;
             
-            const id = href.slice(1);
-            const targetElement = document.getElementById(id);
-            
-            if (!targetElement) return;
-            
-            e.preventDefault();
-            
-            // Ensure the element is focusable for screen readers
-            const originalTabIndex = targetElement.getAttribute('tabindex');
-            targetElement.setAttribute('tabindex', '-1');
-            
-            // Focus the target element
-            targetElement.focus({ preventScroll: true });
-            
-            // Smooth scroll to the target
-            targetElement.scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'start',
-                inline: 'nearest'
-            });
-            
-            // Restore original tabindex after a delay
-            setTimeout(() => {
-                if (originalTabIndex !== null) {
-                    targetElement.setAttribute('tabindex', originalTabIndex);
-                } else {
+            if (targetElement) {
+                e.preventDefault();
+                
+                // Respect reduced motion preference
+                const smoothOK = !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+                
+                // Set focus with proper tabindex handling
+                const priorTabindex = targetElement.getAttribute('tabindex');
+                targetElement.setAttribute('tabindex', '-1');
+                
+                targetElement.focus({ preventScroll: true });
+                targetElement.scrollIntoView({ 
+                    behavior: smoothOK ? 'smooth' : 'auto', 
+                    block: 'start' 
+                });
+                
+                // Restore original tabindex
+                if (priorTabindex === null) {
                     targetElement.removeAttribute('tabindex');
+                } else {
+                    targetElement.setAttribute('tabindex', priorTabindex);
                 }
-            }, 1000);
+            }
         });
     });
     
-    console.log('✨ Progressive enhancement features initialized');
+    log('Progressive enhancement features initialized');
 }
 
 /**
@@ -942,28 +1127,27 @@ function initializeProgressiveEnhancements() {
  * @param {boolean} success - Whether the copy operation was successful
  */
 function showCopyFeedback(button, success = true) {
+    // Store original state
     const originalText = button.textContent;
-    const originalAriaLabel = button.getAttribute('aria-label');
+    const originalAriaLabel = button.getAttribute('aria-label') || '';
     
+    // Update button state using CSS classes instead of inline styles
+    button.classList.add(success ? 'copy-ok' : 'copy-fail');
+    
+    // Update text and aria-label
     if (success) {
         button.textContent = 'Copied!';
         button.setAttribute('aria-label', 'Code copied to clipboard');
-        button.style.background = 'var(--color-brand-success, #10b981)';
     } else {
         button.textContent = 'Failed';
         button.setAttribute('aria-label', 'Copy failed - please try manual copy');
-        button.style.background = '#ef4444';
     }
     
     // Reset button after delay
     setTimeout(() => {
         button.textContent = originalText;
-        if (originalAriaLabel) {
-            button.setAttribute('aria-label', originalAriaLabel);
-        } else {
-            button.removeAttribute('aria-label');
-        }
-        button.style.background = '';
+        button.setAttribute('aria-label', originalAriaLabel);
+        button.classList.remove('copy-ok', 'copy-fail');
     }, 1500);
 }
 
@@ -977,13 +1161,9 @@ function fallbackCopyText(text, button) {
         // Create a temporary textarea element
         const textarea = document.createElement('textarea');
         textarea.value = text;
-        textarea.style.cssText = `
-            position: fixed;
-            top: -9999px;
-            left: -9999px;
-            opacity: 0;
-            pointer-events: none;
-        `;
+        
+        // Position off-screen using CSS classes
+        textarea.className = 'copy-helper-textarea';
         
         document.body.appendChild(textarea);
         textarea.select();
@@ -996,11 +1176,36 @@ function fallbackCopyText(text, button) {
         showCopyFeedback(button, successful);
         
         if (!successful) {
-            console.warn('Fallback copy method also failed');
+            warn('Document.execCommand copy failed');
         }
         
     } catch (error) {
-        console.error('Fallback copy failed:', error);
+        error('Fallback copy failed:', error);
         showCopyFeedback(button, false);
     }
+}
+
+/**
+ * Show error toast notification (global function for reuse)
+ * @param {string} message - Error message to display
+ */
+function showErrorToast(message) {
+    // Create or reuse existing toast
+    let toast = document.querySelector('.toast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.className = 'toast toast-error';
+        toast.setAttribute('hidden', '');
+        document.body.appendChild(toast);
+    }
+    
+    toast.textContent = message;
+    toast.classList.remove('toast-success');
+    toast.classList.add('toast-error');
+    toast.removeAttribute('hidden');
+    
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+        toast.setAttribute('hidden', '');
+    }, 5000);
 }

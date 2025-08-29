@@ -321,6 +321,24 @@ body {
   position: relative;
 }
 
+/* Step entering animation */
+.collected-step-entering {
+  opacity: 0;
+  transform: translateX(-20px);
+}
+
+.collected-step-entered {
+  opacity: 1;
+  transform: translateX(0);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* Hover effects class */
+.collected-step.has-hover-effects:hover,
+.collected-step.has-hover-effects:focus-visible {
+  transform: translateY(-2px) scale(1.05);
+}
+
 .collected-step:hover,
 .collected-step:focus-visible {
   background-color: color-mix(in srgb, var(--color-brand-primary) 20%, transparent);
@@ -1394,6 +1412,129 @@ main:has(#step-5.visible) + .footer {
   font-family: 'SF Pro Display Fallback';
   src: local('Arial');
   font-display: swap;
+}
+
+/* ============================================================================
+   COPY BUTTON AND TOAST FEEDBACK STATES
+   ============================================================================ */
+
+/* Copy button states for CSP compliance */
+button.copy {
+  position: relative;
+  transition: var(--transition-colors), var(--transition-transform);
+}
+
+button.copy.copy-ok {
+  background: var(--color-brand-success, #10b981) !important;
+  border-color: color-mix(in srgb, var(--color-brand-success, #10b981) 60%, transparent);
+  color: white;
+}
+
+button.copy.copy-fail {
+  background: #ef4444 !important;
+  border-color: color-mix(in srgb, #ef4444 60%, transparent);
+  color: white;
+}
+
+/* Toast notification system */
+.toast {
+  position: fixed;
+  top: var(--space-lg);
+  right: var(--space-lg);
+  z-index: var(--z-index-tooltip);
+  padding: var(--space-md) var(--space-lg);
+  border-radius: var(--radius-md);
+  font-family: system-ui, sans-serif;
+  font-weight: var(--font-weight-medium);
+  max-width: 300px;
+  box-shadow: var(--shadow-lg);
+  transition: var(--transition-transform), opacity var(--transition-base);
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+.toast.toast-error {
+  background: #ef4444;
+  color: white;
+  border: 1px solid color-mix(in srgb, #ef4444 80%, transparent);
+}
+
+.toast.toast-success {
+  background: var(--color-brand-success);
+  color: white;
+  border: 1px solid color-mix(in srgb, var(--color-brand-success) 80%, transparent);
+}
+
+.toast:not([hidden]) {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+/* Video play button states */
+.video-play-button {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(59, 130, 246, 0.9);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: var(--space-md) var(--space-lg);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  transition: var(--transition-colors), var(--transition-transform);
+  backdrop-filter: blur(8px);
+  z-index: 10;
+}
+
+.video-play-button:hover {
+  background: rgba(59, 130, 246, 1);
+  transform: translate(-50%, -50%) scale(1.05);
+}
+
+.video-play-button:active {
+  transform: translate(-50%, -50%) scale(0.95);
+}
+
+/* Video error fallback */
+.video-error-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.video-error-fallback .fallback-link {
+  color: var(--color-brand-primary);
+  text-decoration: none;
+  font-weight: var(--font-weight-medium);
+  margin-top: var(--space-md);
+  display: inline-block;
+  transition: var(--transition-colors);
+}
+
+.video-error-fallback .fallback-link:hover {
+  color: var(--color-interactive-hover);
+  text-decoration: underline;
+}
+
+/* Copy helper textarea for CSP compliance */
+.copy-helper-textarea {
+  position: fixed;
+  top: -9999px;
+  left: -9999px;
+  opacity: 0;
+  pointer-events: none;
+  z-index: -1;
 }
 
 /* ============================================================================
