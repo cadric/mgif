@@ -55,6 +55,7 @@ class FedoraInstallerUI {
         this.#setupPageTransitions();
         this.#initializeCursorArrow();
         this.#bindEvents();
+        this.#initializeCopyButtons();
         this.#initialize();
         this.#setupHistoryAPI();
     }
@@ -81,6 +82,43 @@ class FedoraInstallerUI {
         } catch (error) {
             error('Failed to initialize DOM elements:', error);
             throw error;
+        }
+    }
+
+    /**
+     * Initialize copy buttons for code blocks
+     * Auto-inject copy buttons after each .code-block element
+     */
+    #initializeCopyButtons() {
+        try {
+            // Find all code blocks and inject copy buttons
+            document.querySelectorAll('.code-block').forEach(block => {
+                // Check if copy button already exists
+                const existingBtn = block.nextElementSibling?.classList.contains('copy');
+                if (existingBtn) return;
+
+                // Create copy button
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'copy copy-btn';
+                btn.setAttribute('aria-label', 'Copy code to clipboard');
+                btn.setAttribute('title', 'Copy code');
+                
+                // Create button content with icon
+                btn.innerHTML = `
+                    <svg class="copy-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                    </svg>
+                    <span class="copy-text">Copy</span>
+                `;
+                
+                // Insert button after the code block
+                block.insertAdjacentElement('afterend', btn);
+                
+                log('Copy button injected for code block');
+            });
+        } catch (error) {
+            error('Failed to initialize copy buttons:', error);
         }
     }
 
@@ -182,20 +220,20 @@ class FedoraInstallerUI {
             }
         });
 
-        // Touch/swipe events with improved dead zones and angle detection
-        document.addEventListener('touchstart', (e) => {
+        // Touch/swipe events scoped to hero only to avoid blocking native behaviors
+        this.#hero.addEventListener('touchstart', (e) => {
             if (!e.touches?.length) return;
             this.#touchStartY = e.touches[0].clientY;
             this.#touchStartX = e.touches[0].clientX;
         }, { passive: true });
 
-        document.addEventListener('touchmove', (e) => {
+        this.#hero.addEventListener('touchmove', (e) => {
             // Only prevent default if we're doing page transitions, not in scrollable areas
             if (this.#isFromScrollableElement(e.target)) return;
             e.preventDefault();
         }, { passive: false });
 
-        document.addEventListener('touchend', (e) => {
+        this.#hero.addEventListener('touchend', (e) => {
             if (this.#isTransitioning || !e.changedTouches?.length) return;
 
             const touchEndY = e.changedTouches[0].clientY;
@@ -866,6 +904,10 @@ class FedoraInstallerUI {
             toast = document.createElement('div');
             toast.className = 'toast toast-error';
             toast.setAttribute('hidden', '');
+            // Add accessibility attributes for assistive technologies
+            toast.setAttribute('role', 'status');
+            toast.setAttribute('aria-live', 'polite');
+            toast.setAttribute('aria-atomic', 'true');
             document.body.appendChild(toast);
         }
         
@@ -1219,6 +1261,10 @@ function showErrorToast(message) {
         toast = document.createElement('div');
         toast.className = 'toast toast-error';
         toast.setAttribute('hidden', '');
+        // Add accessibility attributes for assistive technologies
+        toast.setAttribute('role', 'status');
+        toast.setAttribute('aria-live', 'polite');
+        toast.setAttribute('aria-atomic', 'true');
         document.body.appendChild(toast);
     }
     

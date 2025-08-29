@@ -33,14 +33,15 @@
   --color-border-accent: rgba(59, 130, 246, 0.2);
   
   /* Spacing Scale */
-  --space-xs: 0.25rem;   /* 4px */
-  --space-sm: 0.5rem;    /* 8px */
-  --space-md: 1rem;      /* 16px */
-  --space-lg: 1.5rem;    /* 24px */
-  --space-xl: 2rem;      /* 32px */
-  --space-2xl: 3rem;     /* 48px */
-  --space-3xl: 4rem;     /* 64px */
-  --space-4xl: 5rem;     /* 80px */
+  --space-2xs: 0.125rem;  /* 2px */
+  --space-xs: 0.25rem;    /* 4px */
+  --space-sm: 0.5rem;     /* 8px */
+  --space-md: 1rem;       /* 16px */
+  --space-lg: 1.5rem;     /* 24px */
+  --space-xl: 2rem;       /* 32px */
+  --space-2xl: 3rem;      /* 48px */
+  --space-3xl: 4rem;      /* 64px */
+  --space-4xl: 5rem;      /* 80px */
   
   /* Typography Scale */
   --font-size-xs: 0.75rem;   /* 12px */
@@ -144,6 +145,57 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* ============================================================================
+   NO-JAVASCRIPT FALLBACK STYLES
+   ============================================================================ */
+
+/* Show content when JavaScript is disabled */
+.no-js .section {
+  position: static !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: none !important;
+  min-height: auto !important;
+  padding: var(--space-2xl) 0 !important;
+  display: block !important;
+}
+
+.no-js .hero {
+  position: static !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: none !important;
+  min-height: auto !important;
+  padding: var(--space-4xl) 0 !important;
+  display: flex !important;
+}
+
+/* Hide interactive elements that require JS */
+.no-js .scroll-indicator,
+.no-js .step-scroll-indicator,
+.no-js .video-controls,
+.no-js .video-play-overlay,
+.no-js .hero-cursor-overlay,
+.no-js .progress-container {
+  display: none !important;
+}
+
+/* Ensure proper spacing without fixed positioning */
+.no-js body {
+  padding-top: 0 !important;
+  overflow: visible !important;
+  height: auto !important;
+}
+
+/* Show all sections in normal flow */
+.no-js .section:not(.hero) {
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.no-js .hero {
+  border-bottom: 1px solid var(--color-border-subtle);
 }
 
 /* ============================================================================
@@ -409,6 +461,9 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  
+  /* Touch behavior optimization */
+  touch-action: pan-y;
   
   /* Grid background instead of gradient */
   background-color: var(--color-bg-primary);
@@ -1414,6 +1469,18 @@ main:has(#step-5.visible) + .footer {
     padding: var(--space-md);
     font-size: var(--font-size-sm);
   }
+  
+  /* Responsive copy buttons */
+  .copy-btn {
+    padding: var(--space-2xs) var(--space-xs);
+    font-size: var(--font-size-xs);
+    min-height: 28px;
+  }
+  
+  .copy-icon {
+    width: 0.875rem;
+    height: 0.875rem;
+  }
 }
 
 /* Tablet styles */
@@ -1594,16 +1661,65 @@ button.copy {
   transition: var(--transition-colors), var(--transition-transform);
 }
 
+/* Copy button styling */
+.copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  margin-block-start: var(--space-sm);
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-family: inherit;
+  cursor: pointer;
+  transition: var(--transition-colors), var(--transition-transform);
+  min-height: 32px;
+}
+
+.copy-btn:hover,
+.copy-btn:focus-visible {
+  background: var(--color-bg-secondary);
+  border-color: var(--color-brand-primary);
+  color: var(--color-interactive-primary);
+  transform: translateY(-1px);
+}
+
+.copy-btn:active {
+  transform: translateY(0);
+  transition-duration: var(--animation-duration-fast);
+}
+
+.copy-icon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+.copy-text {
+  font-weight: var(--font-weight-medium);
+}
+
 button.copy.copy-ok {
   background: var(--color-brand-success, #10b981) !important;
   border-color: color-mix(in srgb, var(--color-brand-success, #10b981) 60%, transparent);
   color: white;
 }
 
+.copy-ok .copy-text::after {
+  content: ' ✓';
+}
+
 button.copy.copy-fail {
   background: #ef4444 !important;
   border-color: color-mix(in srgb, #ef4444 60%, transparent);
   color: white;
+}
+
+.copy-fail .copy-text::after {
+  content: ' ✗';
 }
 
 /* Toast notification system */

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html class="no-js" lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -32,14 +32,17 @@
     <link rel="preload" href="css/style.css" as="style">
     <link rel="preload" href="js/script.js" as="script">
     
+    <!-- Preconnect and preload external media -->
+    <link rel="preconnect" href="https://ifg.sh" crossorigin>
+    <link rel="preload" as="video" href="https://ifg.sh/showcase-v1.mp4" crossorigin>
+    
     <!-- Styles -->
     <link rel="stylesheet" href="css/style.css">
     
     <!-- Favicon and App Icons -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='https://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🐧</text></svg>">
     
-    <!-- Security -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' https:; img-src 'self' data: https:; media-src 'self' https:;">
+    <!-- Security headers are managed by server (Caddy) -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
 </head>
@@ -257,18 +260,56 @@
     </footer>
 
     <!-- Scripts -->
-        <!-- JavaScript -->
     <script src="js/script.js"></script>
-</body>
 
-    <!-- Schema.org structured data -->
-    <script type="application/ld+json">
+    <!-- Remove no-js class when JavaScript is enabled -->
+    <script nonce="fedora-gnome-2025">
+        document.documentElement.classList.remove('no-js');
+    </script>
+
+    <!-- No-JavaScript fallback content -->
+    <noscript>
+        <section class="section" style="position: static; opacity: 1; visibility: visible; transform: none; padding: 2rem; background: var(--color-bg-primary); color: var(--color-text-primary); min-height: auto;">
+            <div class="container">
+                <h2>Minimal Fedora GNOME Setup</h2>
+                <p>A simple guide to install a minimal Fedora GNOME desktop environment.</p>
+                
+                <ol style="list-style: decimal; padding-left: 1.5rem; margin: 1rem 0; line-height: 1.6;">
+                    <li style="margin: 0.5rem 0;">
+                        <strong>Download Fedora Everything</strong> - Get the ISO from 
+                        <a href="https://fedoraproject.org/everything/download" target="_blank" rel="noopener noreferrer" style="color: var(--color-brand-primary);">fedoraproject.org/everything/download</a>
+                    </li>
+                    <li style="margin: 0.5rem 0;">
+                        <strong>Login and Switch to Root</strong> - Use command: <code style="background: var(--color-bg-tertiary); padding: 0.2rem 0.4rem; border-radius: 3px;">sudo su -</code>
+                    </li>
+                    <li style="margin: 0.5rem 0;">
+                        <strong>Run Installation Script</strong> - Execute: <code style="background: var(--color-bg-tertiary); padding: 0.2rem 0.4rem; border-radius: 3px;">bash &lt;(curl -fsSL ifg.sh)</code>
+                    </li>
+                    <li style="margin: 0.5rem 0;">
+                        <strong>Answer Configuration Questions</strong> - Choose your preferences for apps, wallpapers, and desktop style
+                    </li>
+                    <li style="margin: 0.5rem 0;">
+                        <strong>Enjoy Your New Desktop</strong> - Reboot into your minimal Fedora GNOME setup
+                    </li>
+                </ol>
+
+                <div style="margin-top: 2rem; padding: 1rem; background: color-mix(in srgb, var(--color-brand-primary) 10%, transparent); border-radius: 0.5rem; border: 1px solid color-mix(in srgb, var(--color-brand-primary) 20%, transparent);">
+                    <p><strong>Note:</strong> For the best interactive experience, please enable JavaScript. This page includes enhanced features like smooth transitions, video demonstrations, and interactive navigation.</p>
+                </div>
+            </div>
+        </section>
+    </noscript>
+
+    <!-- Schema.org structured data for SEO -->
+    <script id="howto-schema" type="application/ld+json" nonce="fedora-gnome-2025">
     {
         "@context": "https://schema.org",
         "@type": "HowTo",
         "name": "Install Fedora GNOME - Minimal Setup Guide",
         "description": "A minimal, elegant Fedora GNOME installation script with interactive setup",
-        "image": "",
+        "inLanguage": "en",
+        "url": "https://ifg.sh/",
+        "mainEntityOfPage": "https://ifg.sh/",
         "totalTime": "PT30M",
         "estimatedCost": {
             "@type": "MonetaryAmount",
@@ -281,42 +322,61 @@
                 "name": "Computer with internet connection"
             },
             {
-                "@type": "HowToSupply", 
+                "@type": "HowToSupply",
                 "name": "USB drive (4GB or larger)"
+            },
+            {
+                "@type": "HowToSupply",
+                "name": "Fedora Everything ISO",
+                "url": "https://fedoraproject.org/everything/download"
             }
         ],
         "tool": [
             {
                 "@type": "HowToTool",
-                "name": "Fedora Everything ISO"
+                "name": "Fedora Media Writer",
+                "url": "https://fedoraproject.org/workstation/download"
+            },
+            {
+                "@type": "HowToTool",
+                "name": "dd or similar imaging tool"
             }
         ],
         "step": [
             {
                 "@type": "HowToStep",
+                "position": 1,
                 "name": "Download Fedora Everything",
-                "text": "Download and install Fedora Everything from the official website",
-                "url": "https://fedoraproject.org/everything/download"
+                "text": "Download the Fedora Everything ISO from the official website.",
+                "url": "https://ifg.sh/#step-1"
             },
             {
                 "@type": "HowToStep",
-                "name": "Login and Switch to Root", 
-                "text": "Login with your user account and switch to root privileges using sudo su -"
+                "position": 2,
+                "name": "Login and Switch to Root",
+                "text": "Login with your user account and switch to root privileges using sudo su -",
+                "url": "https://ifg.sh/#step-2"
             },
             {
                 "@type": "HowToStep",
+                "position": 3,
                 "name": "Execute the Installation Script",
-                "text": "Run the automated installation script: bash <(curl -fsSL ifg.sh)"
+                "text": "Run the automated installation script: bash <(curl -fsSL ifg.sh)",
+                "url": "https://ifg.sh/#step-3"
             },
             {
                 "@type": "HowToStep",
+                "position": 4,
                 "name": "Answer Configuration Questions",
-                "text": "The script will prompt you for installation scope, app bundle, wallpapers, desktop style, and GRUB menu preferences"
+                "text": "The script will prompt you for installation scope, app bundle, wallpapers, desktop style, and GRUB menu preferences",
+                "url": "https://ifg.sh/#step-4"
             },
             {
                 "@type": "HowToStep",
+                "position": 5,
                 "name": "Enjoy Your New Desktop",
-                "text": "Let the script complete and reboot into your new minimal Fedora GNOME desktop"
+                "text": "Let the script complete and reboot into your new minimal Fedora GNOME desktop",
+                "url": "https://ifg.sh/#step-5"
             }
         ]
     }
