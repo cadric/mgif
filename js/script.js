@@ -256,7 +256,7 @@ class FedoraInstallerUI {
             stepElement.setAttribute('aria-label', `Go to ${title}`);
             stepElement.textContent = title;
 
-            // Add click handler for navigation - use the current section index directly
+            // Add click handler for navigation
             stepElement.addEventListener('click', (e) => {
                 e.preventDefault();
                 const index = parseInt(stepElement.dataset.stepIndex);
@@ -329,20 +329,10 @@ class FedoraInstallerUI {
      */
     #updateProgressBar() {
         try {
-            // Calculate progress based on current section
-            // Hero (-1) = 0%, Introduction (0) = 16.7%, Step 1 (1) = 33.3%, etc.
-            const totalSections = this.#sections.length; // Don't include hero in total
-            let progress = 0;
-            
-            if (this.#currentSectionIndex === -1) {
-                // On hero section
-                progress = 0;
-            } else {
-                // On actual content sections (0, 1, 2, 3, 4)
-                progress = ((this.#currentSectionIndex + 1) / totalSections) * 100;
-            }
-            
-            progress = Math.min(progress, 100);
+            // Calculate progress: -1 (hero) = 0%, sections 0 to n-1 = distributed
+            const totalSteps = this.#sections.length + 1; // +1 for hero
+            const currentStep = this.#currentSectionIndex + 2; // +2 to account for hero at -1
+            const progress = Math.min((currentStep / totalSteps) * 100, 100);
 
             if (this.#progressFill) {
                 this.#progressFill.style.width = `${progress}%`;
