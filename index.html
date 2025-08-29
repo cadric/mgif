@@ -182,6 +182,23 @@
                     <h2>Execute the Installation Script</h2>
                 </header>
                 <div class="step-content">
+                    <p>For security, verify the script integrity before execution:</p>
+                    
+                    <!-- Security verification section -->
+                    <div class="security-section" role="region" aria-labelledby="security-title">
+                        <h4 id="security-title">🔐 Security Verification (Recommended)</h4>
+                        <p>Verify the script's SHA512 hash before running:</p>
+                        <div class="code-block" role="region" aria-label="Hash verification command">
+                            <code>curl -fsSL ifg.sh | sha512sum</code>
+                        </div>
+                        <div class="hash-display" role="region" aria-label="Expected SHA512 hash">
+                            <strong>Expected SHA512:</strong>
+                            <code class="hash-value">41b3e538f1d4f8ffcffa2505b81271575dca517310956846eae9c787b2cffcf78de4dce00ff5c51f9de29b1ad7358bc64e6a80af72a4c5be68b62f83cb4353b8</code>
+                        </div>
+                        <p>Alternative verification: <a href="https://pastebin.com/f3JMNTJY" target="_blank" rel="noopener noreferrer">View hash on Pastebin</a></p>
+                        <p><strong>⚠️ Only proceed if the hashes match exactly!</strong></p>
+                    </div>
+
                     <p>Run the automated installation script:</p>
                     <div class="code-block" role="region" aria-label="Installation command">
                         <code>bash &lt;(curl -fsSL ifg.sh)</code>
