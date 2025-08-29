@@ -829,6 +829,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Store reference for potential cleanup
         window.installerUI = installerUI;
         
+        // Progressive enhancement features
+        initializeProgressiveEnhancements();
+        
     } catch (error) {
         console.error('Failed to initialize Fedora Installer UI:', error);
         // Provide user-friendly error message
@@ -853,3 +856,151 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 5000);
     }
 });
+
+/**
+ * Initialize progressive enhancement features
+ * No frameworks, only modern browser APIs with graceful fallbacks
+ */
+function initializeProgressiveEnhancements() {
+    // Copy button functionality for code blocks
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('button.copy');
+        if (!btn) return;
+        
+        e.preventDefault();
+        
+        // Find the code content to copy
+        const pre = btn.previousElementSibling;
+        const codeBlock = pre?.querySelector('code') || pre;
+        const text = codeBlock?.innerText || codeBlock?.textContent || '';
+        
+        if (!text.trim()) {
+            console.warn('No text content found to copy');
+            return;
+        }
+        
+        // Feature detection for clipboard API
+        if (!navigator.clipboard?.writeText) {
+            // Fallback for older browsers
+            fallbackCopyText(text, btn);
+            return;
+        }
+        
+        // Modern clipboard API
+        navigator.clipboard.writeText(text).then(() => {
+            showCopyFeedback(btn, true);
+        }).catch((error) => {
+            console.warn('Clipboard API failed, trying fallback:', error);
+            fallbackCopyText(text, btn);
+        });
+    });
+    
+    // Smooth skip-link focus handling for accessibility
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', (e) => {
+            const href = anchor.getAttribute('href');
+            if (!href || href === '#') return;
+            
+            const id = href.slice(1);
+            const targetElement = document.getElementById(id);
+            
+            if (!targetElement) return;
+            
+            e.preventDefault();
+            
+            // Ensure the element is focusable for screen readers
+            const originalTabIndex = targetElement.getAttribute('tabindex');
+            targetElement.setAttribute('tabindex', '-1');
+            
+            // Focus the target element
+            targetElement.focus({ preventScroll: true });
+            
+            // Smooth scroll to the target
+            targetElement.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start',
+                inline: 'nearest'
+            });
+            
+            // Restore original tabindex after a delay
+            setTimeout(() => {
+                if (originalTabIndex !== null) {
+                    targetElement.setAttribute('tabindex', originalTabIndex);
+                } else {
+                    targetElement.removeAttribute('tabindex');
+                }
+            }, 1000);
+        });
+    });
+    
+    console.log('✨ Progressive enhancement features initialized');
+}
+
+/**
+ * Show visual feedback when text is copied
+ * @param {HTMLElement} button - The copy button element
+ * @param {boolean} success - Whether the copy operation was successful
+ */
+function showCopyFeedback(button, success = true) {
+    const originalText = button.textContent;
+    const originalAriaLabel = button.getAttribute('aria-label');
+    
+    if (success) {
+        button.textContent = 'Copied!';
+        button.setAttribute('aria-label', 'Code copied to clipboard');
+        button.style.background = 'var(--color-brand-success, #10b981)';
+    } else {
+        button.textContent = 'Failed';
+        button.setAttribute('aria-label', 'Copy failed - please try manual copy');
+        button.style.background = '#ef4444';
+    }
+    
+    // Reset button after delay
+    setTimeout(() => {
+        button.textContent = originalText;
+        if (originalAriaLabel) {
+            button.setAttribute('aria-label', originalAriaLabel);
+        } else {
+            button.removeAttribute('aria-label');
+        }
+        button.style.background = '';
+    }, 1500);
+}
+
+/**
+ * Fallback copy method for browsers without clipboard API
+ * @param {string} text - Text to copy
+ * @param {HTMLElement} button - The copy button element
+ */
+function fallbackCopyText(text, button) {
+    try {
+        // Create a temporary textarea element
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.cssText = `
+            position: fixed;
+            top: -9999px;
+            left: -9999px;
+            opacity: 0;
+            pointer-events: none;
+        `;
+        
+        document.body.appendChild(textarea);
+        textarea.select();
+        textarea.setSelectionRange(0, 99999); // For mobile devices
+        
+        // Execute copy command
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        
+        showCopyFeedback(button, successful);
+        
+        if (!successful) {
+            console.warn('Fallback copy method also failed');
+        }
+        
+    } catch (error) {
+        console.error('Fallback copy failed:', error);
+        showCopyFeedback(button, false);
+    }
+}
