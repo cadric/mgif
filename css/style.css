@@ -639,17 +639,40 @@ body {
   opacity: 0.3;
 }
 
-/* Hero section - always visible initially */
+/* Hero skal KUN være synlig med .visible */
 .hero {
-  position: relative;
-  z-index: 5;
-  opacity: 1;
-  visibility: visible;
-  transform: none;
-  transition: none;
+  position: fixed;            /* samme som de andre "scener" */
+  top: 0; left: 0; width: 100%;
+  min-block-size: 100dvh;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(ellipse at center, var(--color-bg-secondary) 0%, var(--color-bg-primary) 70%);
 }
 
-/* Introduction section with enhanced background */
+/* Skjul hero når den ikke er aktiv */
+.hero:not(.visible) {
+  z-index: 1;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(100px) scale(0.95);
+  transition:
+    opacity 0.8s cubic-bezier(0.25,0.46,0.45,0.94),
+    transform 0.8s cubic-bezier(0.25,0.46,0.45,0.94),
+    visibility 0.8s step-end;
+}
+
+/* Når hero er aktiv */
+.hero.visible {
+  z-index: 10; /* hæv over baggrund, men under modal o.l. */
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+  transition:
+    opacity 0.8s cubic-bezier(0.25,0.46,0.45,0.94),
+    transform 0.8s cubic-bezier(0.25,0.46,0.45,0.94),
+    visibility 0.8s step-start;
+}
+
+* Introduction section with enhanced background */
 .intro-section {
   background: linear-gradient(135deg, 
     color-mix(in srgb, var(--color-brand-primary) 5%, transparent), 
