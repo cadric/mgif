@@ -20,14 +20,15 @@ class FedoraInstallerUI {
     #scrollIndicatorTimeout = null;
     
     // Step titles mapping for collection
-    #stepTitles = {
-        'intro': 'Introduction',
-        '1': 'Download Fedora',
-        '2': 'Login as Root', 
-        '3': 'Run Script',
-        '4': 'Configure',
-        '5': 'Complete'
-    };
+#stepTitles = {
+  'intro': 'Introduction',
+  '1': 'Download Fedora Everything',
+  '2': 'Login and Switch to Root',
+  '3': 'Execute the Installation Script',
+  '4': 'Answer Configuration Questions',
+  '5': 'Enjoy Your New Desktop'
+};
+
 
     constructor() {
         this.#initializeElements();
@@ -328,26 +329,37 @@ class FedoraInstallerUI {
     /**
      * Update progress bar based on current section
      */
-    #updateProgressBar() {
-        try {
-            // Calculate progress: hero (-1) = 0%, sections (0 to n-1) = evenly distributed
-            const totalSteps = this.#sections.length; // Total sections is the number of steps
-            const currentStep = this.#currentSectionIndex; // hero is -1, first section is 0
-            const progress = Math.max(0, Math.min(((currentStep + 1) / totalSteps) * 100, 100));
+// Erstat hele metoden #updateProgressBar() med denne
+#updateProgressBar() {
+  try {
+    // Find samlede antal reelle steps (ignorer intro)
+    const stepSections = Array.from(this.#sections)
+      .filter(s => s.dataset.step && s.dataset.step !== 'intro');
+    const totalSteps = stepSections.length; // typisk 5
 
-            if (this.#progressFill) {
-                this.#progressFill.style.width = `${progress}%`;
-                
-                // Update ARIA attributes
-                const progressBar = this.#progressFill.closest('.progress-bar');
-                if (progressBar) {
-                    progressBar.setAttribute('aria-valuenow', Math.round(progress));
-                }
-            }
-        } catch (error) {
-            console.error('Failed to update progress bar:', error);
-        }
+    // Beregn aktuelt step-nummer
+    let currentStepNumber = 0; // 0 = Hero/Intro
+    if (this.#currentSectionIndex >= 0) {
+      const active = this.#sections[this.#currentSectionIndex];
+      const id = active?.dataset?.step ?? null;
+      if (id && id !== 'intro') currentStepNumber = parseInt(id, 10) || 0;
     }
+
+    // Progress: 0% på hero/intro, 100% på step 5
+    const progress = totalSteps > 0
+      ? (currentStepNumber / totalSteps) * 100
+      : 0;
+
+    if (this.#progressFill) {
+      this.#progressFill.style.width = `${Math.max(0, Math.min(progress, 100))}%`;
+      const progressBar = this.#progressFill.closest('.progress-bar');
+      if (progressBar) progressBar.setAttribute('aria-valuenow', String(Math.round(progress)));
+    }
+  } catch (error) {
+    console.error('Failed to update progress bar:', error);
+  }
+}
+
 
     /**
      * Initialize showcase video with enhanced loading and interaction
