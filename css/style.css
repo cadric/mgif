@@ -1871,12 +1871,7 @@ button.copy.copy-fail {
   color: var(--color-interactive-hover);
 }
 
-/* Copy helper textarea for CSP compliance */
-.copy-helper-textarea {
-  position: absolute;
-  left: -9999px;
-  opacity: 0;
-}
+
 
 /* CSP-compliant utility classes */
 .is-muted {
