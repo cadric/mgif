@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
     <title>404 - Page Not Found</title>
     <!--
     MIT License
@@ -55,6 +56,19 @@ body {
   align-items: center;
   min-height: 80vh;
   width: 100%;
+  animation: fadeInUp 1s ease 0.2s both;
+}
+
+/* Animation for page entrance */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .wrapper {
@@ -67,14 +81,42 @@ body {
   overflow-y: hidden;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 0.5rem;
+  gap: var(--space-sm);
   mask-image: linear-gradient(
     to bottom,
     transparent,
     black 40% 60%,
     transparent
   );
-  margin: 0 auto 3rem auto;
+  margin: 0 auto var(--space-2xl) auto;
+  padding: var(--space-lg);
+}
+
+/* Screen reader only heading */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Error message styling - now outside wrapper */
+.error-message {
+  text-align: center;
+  font-size: clamp(1rem, 2.5vw + 0.05rem, 1.4rem);
+  color: var(--color-text-secondary);
+  text-transform: capitalize;
+  text-wrap: balance;
+  line-height: var(--line-height-relaxed);
+  margin-top: var(--space-lg);
+  max-width: 600px;
+  /* Ensure good contrast ratio (4.5:1) */
+  color: var(--color-text-primary);
 }
 
 /* items */
@@ -82,15 +124,19 @@ body {
   --delay: calc(var(--i) * 100ms);
   --translate: calc(var(--item-size) * 3);
   --404-blur: 3px;
-  --404-clr: var(--active-color);
+  --404-clr: var(--color-brand-primary);
 
   font-size: 12rem;
-  font-weight: 300;
+  font-weight: var(--font-weight-light);
   display: grid;
   place-content: center;
   color: var(--404-clr);
   filter: blur(var(--404-blur));
-  text-shadow: 0 0 1rem var(--yellow-shadow);
+  text-shadow: 0 0 1rem rgba(59, 130, 246, 0.5);
+  background: linear-gradient(135deg, var(--color-brand-primary), var(--color-brand-secondary));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 /* Fix animation for all browsers */
@@ -111,27 +157,133 @@ body {
   --i: 3;
 }
 
-.wrapper > p {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  translate: -50% -50%;
-  margin: auto;
-  width: 100%;
-  text-align: center;
-  font-size: clamp(1rem, 2.5vw + 0.05rem, 1.4rem);
-  color: var(--text-color);
-  text-transform: capitalize;
-  text-shadow: 0 0 0.25rem var(--text-shadow-color);
-  mix-blend-mode: difference;
-  text-wrap: balance;
-}
-
 .home-link-container {
   text-align: center;
-  margin-top: 2rem;
+  margin-top: var(--space-2xl);
 }
 
+/* Style the return home button to match site design */
+.home-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-xl);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-accent);
+  background: linear-gradient(135deg, var(--color-brand-primary), var(--color-brand-secondary));
+  border: 1px solid var(--color-border-accent);
+  border-radius: var(--radius-lg);
+  text-decoration: none;
+  transition: var(--transition-colors), var(--transition-transform);
+  box-shadow: var(--shadow-base);
+  position: relative;
+  overflow: hidden;
+  font-family: inherit;
+}
+
+.home-button:hover,
+.home-button:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-glow);
+  color: var(--color-text-accent);
+}
+
+.home-button:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+}
+
+.home-button:active {
+  transform: translateY(-1px);
+  transition-duration: var(--animation-duration-fast);
+}
+
+.home-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.home-button:hover::before {
+  left: 100%;
+}
+
+/* Enhanced support detection for background-clip */
+@supports not (-webkit-background-clip: text) {
+  .wrapper > span {
+    background: none;
+    color: var(--color-brand-primary);
+    text-shadow: 0 0 1rem rgba(59, 130, 246, 0.5);
+  }
+}
+
+/* Ensure high contrast for accessibility */
+.error-message {
+  /* Ensure minimum 4.5:1 contrast ratio against dark background */
+  color: var(--color-text-primary); /* #e5e5e5 provides ~13:1 contrast against #0a0a0a */
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .wrapper {
+    --item-size: 6rem;
+  }
+  
+  .wrapper > span {
+    font-size: 8rem;
+  }
+  
+  .error-message {
+    font-size: clamp(0.9rem, 4vw, 1.2rem);
+    padding: 0 var(--space-md);
+  }
+  
+  .home-button {
+    padding: var(--space-sm) var(--space-lg);
+    font-size: var(--font-size-sm);
+  }
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  .wrapper > span {
+    animation: none;
+  }
+  
+  .home-button {
+    transition: none;
+  }
+  
+  .home-button::before {
+    display: none;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .wrapper > span {
+    filter: none;
+    text-shadow: none;
+    color: var(--color-text-primary);
+  }
+  
+  .error-message {
+    color: var(--color-text-primary);
+    font-weight: var(--font-weight-medium);
+  }
+  
+  .home-button {
+    background: var(--color-brand-primary);
+    border-width: 2px;
+    border-color: var(--color-text-primary);
+  }
+}
 /* Define keyframes separately to ensure they work */
 @keyframes flip-transform {
   50%,
@@ -165,14 +317,23 @@ body {
 </head>
 <body>
     <main class="error-page">
+        <h1 class="sr-only">Page not found</h1>
+        
         <div class="wrapper">
-            <span>4</span>
-            <span>0</span>
-            <span>4</span>
-            <p>Oops! The page you're looking for seems to have vanished into another dimension...</p>
+            <span aria-hidden="true">4</span>
+            <span aria-hidden="true">0</span>
+            <span aria-hidden="true">4</span>
         </div>
+        
+        <p class="error-message">Oops! This page seems to have taken a different installation path...</p>
+        
         <div class="home-link-container">
-            <a href="/" class="dialog-save_button">Return to Home</a>
+            <a href="/" class="home-button">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                </svg>
+                Return to Home
+            </a>
         </div>
     </main>
 </body>
