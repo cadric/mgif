@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - Page Not Found</title>
+    <!--
+    MIT License
+
+    Animation based on: https://codepen.io/cbolson/pen/PwoKMXd by Chris Bolson
+    Copyright (c) 2023 Chris Bolson
+    
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+    
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+    
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+    -->
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+body {
+  min-height: 100svh;
+  padding-block: 1rem;
+  display: grid;
+  place-items: center;
+  gap: 0rem;
+  /* Grid background instead of gradient */
+  background-color: var(--color-bg-primary);
+  background-image: 
+    linear-gradient(0deg, 
+      rgba(59, 130, 246, 0.08), rgba(59, 130, 246, 0.08) 1px,
+      transparent 1px, transparent 50px),
+    linear-gradient(90deg, 
+      rgba(59, 130, 246, 0.08), rgba(59, 130, 246, 0.08) 1px,
+      transparent 1px, transparent 50px);
+  background-size: 50px 50px;
+}
+
+.error-page {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 80vh;
+  width: 100%;
+}
+
+.wrapper {
+  --item-size: 8rem;
+  --duration: 2s;
+  --timing-function: cubic-bezier(0.66, 0, 0.34, 1);
+
+  width: min(100%, 500px);
+  position: relative;
+  overflow-y: hidden;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    black 40% 60%,
+    transparent
+  );
+  margin: 0 auto 3rem auto;
+}
+
+/* items */
+.wrapper > span {
+  --delay: calc(var(--i) * 100ms);
+  --translate: calc(var(--item-size) * 3);
+  --404-blur: 3px;
+  --404-clr: var(--active-color);
+
+  font-size: 12rem;
+  font-weight: 300;
+  display: grid;
+  place-content: center;
+  color: var(--404-clr);
+  filter: blur(var(--404-blur));
+  text-shadow: 0 0 1rem var(--yellow-shadow);
+}
+
+/* Fix animation for all browsers */
+@media not (prefers-reduced-motion) {
+  .wrapper > span {
+    animation: flip-transform var(--duration) var(--timing-function) infinite var(--delay),
+               flip-translate var(--duration) var(--timing-function) infinite var(--delay);
+  }
+}
+
+.wrapper > span:nth-child(1) {
+  --i: 1;
+}
+.wrapper > span:nth-child(2) {
+  --i: 2;
+}
+.wrapper > span:nth-child(3) {
+  --i: 3;
+}
+
+.wrapper > p {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  margin: auto;
+  width: 100%;
+  text-align: center;
+  font-size: clamp(1rem, 2.5vw + 0.05rem, 1.4rem);
+  color: var(--text-color);
+  text-transform: capitalize;
+  text-shadow: 0 0 0.25rem var(--text-shadow-color);
+  mix-blend-mode: difference;
+  text-wrap: balance;
+}
+
+.home-link-container {
+  text-align: center;
+  margin-top: 2rem;
+}
+
+/* Define keyframes separately to ensure they work */
+@keyframes flip-transform {
+  50%,
+  100% {
+    transform: translateY(calc(var(--translate) * -1));
+  }
+}
+
+@keyframes flip-translate {
+  24.999999% {
+    opacity: 1;
+    translate: 0 0;
+  }
+  25% {
+    opacity: 0;
+    translate: 0 var(--translate);
+  }
+  25.000001%,
+  100% {
+    opacity: 1;
+    translate: 0 var(--translate);
+  }
+}
+
+*,
+::before,
+::after {
+  box-sizing: border-box;
+}
+    </style>
+</head>
+<body>
+    <main class="error-page">
+        <div class="wrapper">
+            <span>4</span>
+            <span>0</span>
+            <span>4</span>
+            <p>Oops! The page you're looking for seems to have vanished into another dimension...</p>
+        </div>
+        <div class="home-link-container">
+            <a href="/" class="dialog-save_button">Return to Home</a>
+        </div>
+    </main>
+</body>
+</html>
