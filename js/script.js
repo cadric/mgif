@@ -19,6 +19,14 @@ class FedoraInstallerUI {
     #touchStartX = 0;
     #scrollIndicatorTimeout = null;
     
+    // Mouse cursor arrow fields (Hero section only)
+    #cursorCanvas;
+    #cursorCtx;
+    #cursorTarget;
+    #mousePosition = { x: null, y: null };
+    #cursorAnimationId = null;
+    #isCursorActive = false;
+    
     // Step titles mapping for collection
 #stepTitles = {
   'intro': 'Introduction',
@@ -33,6 +41,7 @@ class FedoraInstallerUI {
     constructor() {
         this.#initializeElements();
         this.#setupPageTransitions();
+        this.#initializeCursorArrow();
         this.#bindEvents();
         this.#initialize();
     }
@@ -74,6 +83,45 @@ class FedoraInstallerUI {
         // Set up initial state
         this.#currentSectionIndex = -1; // Hero is active
         this.#updateProgressBar();
+    }
+
+    /**
+     * Initialize cursor arrow system for Hero section
+     */
+    #initializeCursorArrow() {
+        try {
+            this.#cursorCanvas = document.getElementById('hero-cursor-overlay');
+            this.#cursorTarget = document.getElementById('hero-scroll-target');
+            
+            if (!this.#cursorCanvas || !this.#cursorTarget) {
+                console.warn('Cursor arrow elements not found - skipping cursor arrow initialization');
+                return;
+            }
+
+            this.#cursorCtx = this.#cursorCanvas.getContext('2d');
+            this.#updateCanvasSize();
+
+            // Handle window resize
+            window.addEventListener('resize', () => this.#updateCanvasSize());
+
+            // Mouse position tracking (only when hero is visible)
+            document.addEventListener('mousemove', (e) => {
+                if (this.#currentSectionIndex === -1) { // Hero is active
+                    this.#mousePosition.x = e.clientX;
+                    this.#mousePosition.y = e.clientY;
+                    
+                    if (!this.#isCursorActive) {
+                        this.#startCursorAnimation();
+                    }
+                }
+            });
+
+            // Hide cursor arrow when mouse leaves window or hero becomes inactive
+            document.addEventListener('mouseleave', () => this.#stopCursorAnimation());
+            
+        } catch (error) {
+            console.error('Failed to initialize cursor arrow:', error);
+        }
     }
 
     /**
@@ -193,6 +241,11 @@ class FedoraInstallerUI {
         if (this.#isTransitioning || sectionIndex === this.#currentSectionIndex) return;
         
         this.#isTransitioning = true;
+        
+        // Stop cursor arrow when leaving hero section
+        if (this.#currentSectionIndex === -1 && sectionIndex !== -1) {
+            this.#stopCursorAnimation();
+        }
         
         // Hide current section/hero
         if (this.#currentSectionIndex === -1) {
@@ -615,10 +668,145 @@ class FedoraInstallerUI {
     }
 
     /**
+     * Update canvas size to match viewport
+     */
+    #updateCanvasSize() {
+        if (!this.#cursorCanvas) return;
+        
+        this.#cursorCanvas.width = window.innerWidth;
+        this.#cursorCanvas.height = window.innerHeight;
+    }
+
+    /**
+     * Start cursor arrow animation
+     */
+    #startCursorAnimation() {
+        if (this.#isCursorActive || !this.#cursorCanvas) return;
+        
+        this.#isCursorActive = true;
+        this.#cursorCanvas.classList.add('active');
+        this.#animateCursorArrow();
+    }
+
+    /**
+     * Stop cursor arrow animation
+     */
+    #stopCursorAnimation() {
+        this.#isCursorActive = false;
+        
+        if (this.#cursorAnimationId) {
+            cancelAnimationFrame(this.#cursorAnimationId);
+            this.#cursorAnimationId = null;
+        }
+        
+        if (this.#cursorCanvas) {
+            this.#cursorCanvas.classList.remove('active');
+            this.#cursorCtx?.clearRect(0, 0, this.#cursorCanvas.width, this.#cursorCanvas.height);
+        }
+    }
+
+    /**
+     * Animate cursor arrow pointing to target
+     */
+    #animateCursorArrow() {
+        if (!this.#isCursorActive || !this.#cursorCtx || !this.#cursorTarget || this.#currentSectionIndex !== -1) {
+            this.#stopCursorAnimation();
+            return;
+        }
+
+        // Clear canvas
+        this.#cursorCtx.clearRect(0, 0, this.#cursorCanvas.width, this.#cursorCanvas.height);
+
+        if (this.#mousePosition.x !== null && this.#mousePosition.y !== null) {
+            // Get target position
+            const targetRect = this.#cursorTarget.getBoundingClientRect();
+            const targetX = targetRect.left + targetRect.width / 2;
+            const targetY = targetRect.top + targetRect.height / 2;
+
+            // Calculate arrow properties
+            const deltaX = targetX - this.#mousePosition.x;
+            const deltaY = targetY - this.#mousePosition.y;
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+            // Only show arrow if mouse is not too close to target and distance is reasonable
+            if (distance > 50 && distance < 800) {
+                const angle = Math.atan2(deltaY, deltaX);
+                
+                // Arrow start position (near mouse cursor)
+                const startX = this.#mousePosition.x + Math.cos(angle) * 30;
+                const startY = this.#mousePosition.y + Math.sin(angle) * 30;
+                
+                // Arrow end position (closer to target but not touching)
+                const arrowLength = Math.min(distance - 40, 120);
+                const endX = startX + Math.cos(angle) * arrowLength;
+                const endY = startY + Math.sin(angle) * arrowLength;
+
+                // Draw arrow
+                this.#drawArrow(startX, startY, endX, endY);
+            }
+        }
+
+        this.#cursorAnimationId = requestAnimationFrame(() => this.#animateCursorArrow());
+    }
+
+    /**
+     * Draw arrow from start to end position
+     */
+    #drawArrow(startX, startY, endX, endY) {
+        if (!this.#cursorCtx) return;
+
+        const angle = Math.atan2(endY - startY, endX - startX);
+        const arrowHeadLength = 15;
+        const arrowHeadAngle = Math.PI / 6;
+
+        // Create gradient for arrow
+        const gradient = this.#cursorCtx.createLinearGradient(startX, startY, endX, endY);
+        gradient.addColorStop(0, 'rgba(59, 130, 246, 0.7)');
+        gradient.addColorStop(1, 'rgba(59, 130, 246, 1)');
+
+        // Add subtle glow effect
+        this.#cursorCtx.shadowColor = '#3b82f6';
+        this.#cursorCtx.shadowBlur = 8;
+        this.#cursorCtx.shadowOffsetX = 0;
+        this.#cursorCtx.shadowOffsetY = 0;
+
+        // Set arrow style
+        this.#cursorCtx.strokeStyle = gradient;
+        this.#cursorCtx.fillStyle = '#3b82f6';
+        this.#cursorCtx.lineWidth = 2.5;
+        this.#cursorCtx.lineCap = 'round';
+        this.#cursorCtx.lineJoin = 'round';
+
+        // Draw arrow shaft
+        this.#cursorCtx.beginPath();
+        this.#cursorCtx.moveTo(startX, startY);
+        this.#cursorCtx.lineTo(endX, endY);
+        this.#cursorCtx.stroke();
+
+        // Draw arrow head
+        this.#cursorCtx.beginPath();
+        this.#cursorCtx.moveTo(endX, endY);
+        this.#cursorCtx.lineTo(
+            endX - arrowHeadLength * Math.cos(angle - arrowHeadAngle),
+            endY - arrowHeadLength * Math.sin(angle - arrowHeadAngle)
+        );
+        this.#cursorCtx.lineTo(
+            endX - arrowHeadLength * Math.cos(angle + arrowHeadAngle),
+            endY - arrowHeadLength * Math.sin(angle + arrowHeadAngle)
+        );
+        this.#cursorCtx.closePath();
+        this.#cursorCtx.fill();
+
+        // Reset shadow for next drawing
+        this.#cursorCtx.shadowBlur = 0;
+    }
+
+    /**
      * Cleanup method for removing event listeners
      */
     destroy() {
         try {
+            this.#stopCursorAnimation();
             clearTimeout(this.#scrollIndicatorTimeout);
         } catch (error) {
             console.error('Failed to cleanup FedoraInstallerUI:', error);

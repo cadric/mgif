@@ -61,10 +61,13 @@
     <main id="main-content" role="main">
         <!-- Hero Section -->
         <section class="hero" aria-labelledby="hero-title">
+            <!-- Mouse cursor arrow overlay (Hero section only) -->
+            <canvas id="hero-cursor-overlay" class="hero-cursor-overlay" aria-hidden="true"></canvas>
+            
             <div class="hero-content">
                 <h1 id="hero-title" class="title">Install Fedora GNOME</h1>
                 <p class="subtitle">A minimal, elegant installation script</p>
-                <button class="scroll-indicator" aria-label="Scroll down to start installation guide" type="button">
+                <button class="scroll-indicator" id="hero-scroll-target" aria-label="Scroll down to start installation guide" type="button">
                     <div class="scroll-arrow" aria-hidden="true"></div>
                     <span class="sr-only">Continue to installation guide</span>
                 </button>
