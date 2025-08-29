@@ -208,11 +208,14 @@ body {
   background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
   line-height: var(--line-height-relaxed);
-  overflow-x: hidden;
+  overflow: hidden; /* Prevent scrolling for page transitions */
   /* Improve text rendering */
   text-rendering: optimizeSpeed;
   /* Better scrolling on iOS */
   -webkit-overflow-scrolling: touch;
+  /* Full height for page transitions */
+  height: 100vh;
+  position: relative;
 }
 
 /* Focus management for accessibility */
@@ -570,7 +573,7 @@ body {
   padding-inline: var(--space-lg);
 }
 
-/* Section styling */
+/* Section styling with page transitions */
 .section {
   min-block-size: 100vh;
   /* Use modern viewport units when supported */
@@ -578,21 +581,50 @@ body {
   display: flex;
   align-items: center;
   padding-block: var(--space-4xl);
+  /* Page transition setup */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1;
   opacity: 0;
-  transform: translateY(60px);
-  transition: opacity var(--animation-duration-slow) ease,
-              transform var(--animation-duration-slow) ease;
-  /* Relative positioning for scroll indicators */
-  position: relative;
+  visibility: hidden;
+  transform: translateY(100px) scale(0.95);
+  transition: 
+    opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    visibility 0.8s step-end;
+  /* Background for better readability */
+  background: var(--color-bg-primary);
 }
 
 .section.visible {
   opacity: 1;
-  transform: translateY(0);
+  visibility: visible;
+  transform: translateY(0) scale(1);
+  transition: 
+    opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    visibility 0.8s step-start;
+}
+
+.section.active {
+  z-index: 10;
 }
 
 .section.collected {
-  transform: translateY(-20px);
+  transform: translateY(-50px) scale(0.9);
+  opacity: 0.3;
+}
+
+/* Hero section - always visible initially */
+.hero {
+  position: relative;
+  z-index: 5;
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition: none;
 }
 
 /* Introduction section with enhanced background */

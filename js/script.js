@@ -1,7 +1,7 @@
 /**
- * Smooth scrolling and step collection functionality for Fedora GNOME installer website
+ * Page transition and step collection functionality for Fedora GNOME installer website
  * @author Cadric
- * @description Provides interactive scrolling, step collection, and navigation features
+ * @description Provides page transitions, step collection, and navigation features
  */
 
 /**
@@ -13,9 +13,11 @@ class FedoraInstallerUI {
     #collectedSteps;
     #sections;
     #hero;
-    #ticking = false;
+    #currentSectionIndex = -1; // Start with hero (-1), then sections (0, 1, 2...)
+    #isTransitioning = false;
+    #touchStartY = 0;
+    #touchStartX = 0;
     #scrollIndicatorTimeout = null;
-    #sectionObserver;
     
     // Step titles mapping for collection
     #stepTitles = {
@@ -29,7 +31,7 @@ class FedoraInstallerUI {
 
     constructor() {
         this.#initializeElements();
-        this.#setupObservers();
+        this.#setupPageTransitions();
         this.#bindEvents();
         this.#initialize();
     }
@@ -47,6 +49,12 @@ class FedoraInstallerUI {
             if (!this.#progressFill || !this.#collectedSteps || !this.#hero) {
                 throw new Error('Required DOM elements not found');
             }
+
+            // Hide all sections initially except hero
+            this.#sections.forEach(section => {
+                section.classList.remove('visible', 'active');
+            });
+
         } catch (error) {
             console.error('Failed to initialize DOM elements:', error);
             throw error;
@@ -54,34 +62,176 @@ class FedoraInstallerUI {
     }
 
     /**
-     * Setup Intersection Observer for sections
+     * Setup page transition system
      */
-    #setupObservers() {
-        const observerOptions = {
-            root: null,
-            rootMargin: '-20% 0px -20% 0px',
-            threshold: 0
-        };
+    #setupPageTransitions() {
+        // Make sure hero is visible initially
+        if (this.#hero) {
+            this.#hero.classList.add('visible');
+        }
+        
+        // Set up initial state
+        this.#currentSectionIndex = -1; // Hero is active
+        this.#updateProgressBar();
+    }
 
-        this.#sectionObserver = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    // Make section visible with animation
-                    entry.target.classList.add('visible');
+    /**
+     * Bind all event listeners
+     */
+    #bindEvents() {
+        // Scroll indicators (arrows)
+        document.querySelectorAll('.scroll-indicator').forEach(indicator => {
+            indicator.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.#goToNextSection();
+            });
+        });
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'ArrowDown':
+                case ' ':
+                    e.preventDefault();
+                    this.#goToNextSection();
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    this.#goToPreviousSection();
+                    break;
+            }
+        });
+
+        // Touch/swipe events
+        document.addEventListener('touchstart', (e) => {
+            this.#touchStartY = e.touches[0].clientY;
+            this.#touchStartX = e.touches[0].clientX;
+        }, { passive: true });
+
+        document.addEventListener('touchmove', (e) => {
+            // Prevent default scrolling
+            e.preventDefault();
+        }, { passive: false });
+
+        document.addEventListener('touchend', (e) => {
+            if (this.#isTransitioning) return;
+
+            const touchEndY = e.changedTouches[0].clientY;
+            const touchEndX = e.changedTouches[0].clientX;
+            const deltaY = this.#touchStartY - touchEndY;
+            const deltaX = Math.abs(this.#touchStartX - touchEndX);
+
+            // Only trigger if vertical swipe is dominant
+            if (Math.abs(deltaY) > 50 && deltaX < 100) {
+                if (deltaY > 0) {
+                    // Swipe up - go to next section
+                    this.#goToNextSection();
+                } else {
+                    // Swipe down - go to previous section
+                    this.#goToPreviousSection();
+                }
+            }
+        }, { passive: true });
+
+        // Mouse wheel navigation
+        document.addEventListener('wheel', (e) => {
+            if (this.#isTransitioning) return;
+            
+            e.preventDefault();
+            
+            if (e.deltaY > 0) {
+                // Scroll down - go to next section
+                this.#goToNextSection();
+            } else {
+                // Scroll up - go to previous section
+                this.#goToPreviousSection();
+            }
+        }, { passive: false });
+
+        // Collected steps navigation
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('.collected-step')) {
+                const stepElement = e.target.closest('.collected-step');
+                const stepIndex = parseInt(stepElement.dataset.stepIndex);
+                if (!isNaN(stepIndex)) {
+                    this.#goToSection(stepIndex);
+                }
+            }
+        });
+    }
+
+    /**
+     * Navigate to next section
+     */
+    #goToNextSection() {
+        if (this.#isTransitioning) return;
+        
+        const nextIndex = this.#currentSectionIndex + 1;
+        if (nextIndex < this.#sections.length) {
+            this.#goToSection(nextIndex);
+        }
+    }
+
+    /**
+     * Navigate to previous section
+     */
+    #goToPreviousSection() {
+        if (this.#isTransitioning) return;
+        
+        const prevIndex = this.#currentSectionIndex - 1;
+        if (prevIndex >= -1) { // -1 is hero
+            this.#goToSection(prevIndex);
+        }
+    }
+
+    /**
+     * Navigate to specific section
+     * @param {number} sectionIndex - Section index (-1 for hero, 0+ for sections)
+     */
+    #goToSection(sectionIndex) {
+        if (this.#isTransitioning || sectionIndex === this.#currentSectionIndex) return;
+        
+        this.#isTransitioning = true;
+        
+        // Hide current section/hero
+        if (this.#currentSectionIndex === -1) {
+            // Currently on hero
+            this.#hero.classList.remove('visible');
+        } else {
+            // Currently on a section
+            const currentSection = this.#sections[this.#currentSectionIndex];
+            if (currentSection) {
+                currentSection.classList.remove('visible', 'active');
+            }
+        }
+
+        // Show target section/hero
+        setTimeout(() => {
+            if (sectionIndex === -1) {
+                // Going to hero
+                this.#hero.classList.add('visible');
+            } else {
+                // Going to a section
+                const targetSection = this.#sections[sectionIndex];
+                if (targetSection) {
+                    targetSection.classList.add('visible', 'active');
                     
-                    // Collect step at top if it has a data-step attribute
-                    const stepId = entry.target.getAttribute('data-step');
+                    // Collect step
+                    const stepId = targetSection.getAttribute('data-step');
                     if (stepId && this.#stepTitles[stepId]) {
                         this.#collectStep(stepId, this.#stepTitles[stepId]);
                     }
                 }
-            });
-        }, observerOptions);
-
-        // Observe all sections
-        this.#sections.forEach(section => {
-            this.#sectionObserver.observe(section);
-        });
+            }
+            
+            this.#currentSectionIndex = sectionIndex;
+            this.#updateProgressBar();
+            
+            // Allow next transition after animation
+            setTimeout(() => {
+                this.#isTransitioning = false;
+            }, 300);
+        }, 100);
     }
 
     /**
@@ -91,489 +241,121 @@ class FedoraInstallerUI {
      */
     #collectStep(stepId, title) {
         try {
-            // Check if step is already collected
-            if (document.querySelector(`[data-collected-step="${stepId}"]`)) {
+            // Check if step already exists
+            const existingStep = this.#collectedSteps.querySelector(`[data-step-id="${stepId}"]`);
+            if (existingStep) {
+                this.#highlightElement(existingStep);
                 return;
             }
-            
-            // Create collected step element
-            const stepElement = document.createElement('div');
+
+            // Create new step element
+            const stepElement = document.createElement('button');
             stepElement.className = 'collected-step';
-            stepElement.setAttribute('data-collected-step', stepId);
+            stepElement.setAttribute('data-step-id', stepId);
+            stepElement.setAttribute('data-step-index', this.#currentSectionIndex);
+            stepElement.setAttribute('aria-label', `Go to ${title}`);
             stepElement.textContent = title;
-            stepElement.style.cursor = 'pointer';
-            stepElement.title = `Go back to: ${title}`;
-            
-            // Add click handler to scroll back to the section
-            stepElement.addEventListener('click', () => {
-                this.#scrollToSection(stepId, title);
+
+            // Add click handler for navigation - use the current section index directly
+            stepElement.addEventListener('click', (e) => {
+                e.preventDefault();
+                const index = parseInt(stepElement.dataset.stepIndex);
+                if (!isNaN(index)) {
+                    this.#goToSection(index);
+                }
             });
-            
-            // Add hover effects
-            this.#addHoverEffects(stepElement);
-            
-            // Add to collected steps container
+
+            // Add step with animation
+            stepElement.style.opacity = '0';
+            stepElement.style.transform = 'translateX(-20px)';
             this.#collectedSteps.appendChild(stepElement);
-        } catch (error) {
-            console.error(`Failed to collect step ${stepId}:`, error);
-        }
-    }
 
-    /**
-     * Scroll to a specific section with highlight effect
-     * @param {string} stepId - The step identifier
-     * @param {string} title - The step title for logging
-     */
-    #scrollToSection(stepId, title) {
-        try {
-            const targetSection = document.querySelector(`[data-step="${stepId}"]`);
-            if (!targetSection) {
-                console.warn(`Section with step ID "${stepId}" not found`);
-                return;
-            }
-
-            targetSection.scrollIntoView({
-                behavior: 'smooth',
-                block: 'center'
+            // Animate in
+            requestAnimationFrame(() => {
+                stepElement.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                stepElement.style.opacity = '1';
+                stepElement.style.transform = 'translateX(0)';
             });
-            
-            // Add temporary highlight effect
-            this.#highlightElement(targetSection);
+
+            // Highlight the new step
+            setTimeout(() => this.#highlightElement(stepElement), 100);
+
         } catch (error) {
-            console.error(`Failed to scroll to section ${stepId}:`, error);
+            console.error('Failed to collect step:', error);
         }
     }
 
     /**
-     * Add temporary highlight effect to an element
-     * @param {Element} element - The element to highlight
+     * Highlight element with visual feedback
+     * @param {HTMLElement} element - Element to highlight
      */
     #highlightElement(element) {
-        element.style.transform = 'scale(1.02)';
-        element.style.transition = 'transform 0.3s ease';
-        
-        setTimeout(() => {
-            element.style.transform = 'scale(1)';
+        try {
+            element.classList.add('highlight');
+            
+            // Remove highlight after animation
             setTimeout(() => {
-                element.style.transition = '';
-            }, 300);
-        }, 300);
+                element.classList.remove('highlight');
+            }, 1000);
+            
+            // Add hover effects
+            this.#addHoverEffects(element);
+            
+        } catch (error) {
+            console.error('Failed to highlight element:', error);
+        }
     }
 
     /**
-     * Add hover effects to an element
-     * @param {Element} element - The element to add effects to
+     * Add hover effects to collected steps
+     * @param {HTMLElement} element - Element to add effects to
      */
     #addHoverEffects(element) {
-        element.addEventListener('mouseenter', () => {
-            element.style.transform = 'translateY(-2px)';
-            element.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.3)';
-        });
-        
-        element.addEventListener('mouseleave', () => {
-            element.style.transform = 'translateY(0)';
-            element.style.boxShadow = 'none';
-        });
+        try {
+            element.addEventListener('mouseenter', () => {
+                element.style.transform = 'translateY(-2px) scale(1.05)';
+            });
+            
+            element.addEventListener('mouseleave', () => {
+                element.style.transform = 'translateY(0) scale(1)';
+            });
+        } catch (error) {
+            console.error('Failed to add hover effects:', error);
+        }
     }
 
     /**
-     * Update progress bar based on scroll position
+     * Update progress bar based on current section
      */
     #updateProgressBar() {
         try {
-            const windowHeight = window.innerHeight;
-            const documentHeight = document.documentElement.scrollHeight;
-            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            // Calculate progress based on current section
+            // Hero (-1) = 0%, Introduction (0) = 16.7%, Step 1 (1) = 33.3%, etc.
+            const totalSections = this.#sections.length; // Don't include hero in total
+            let progress = 0;
             
-            // Calculate progress (excluding hero section)
-            const heroHeight = this.#hero.offsetHeight;
-            const contentHeight = documentHeight - heroHeight - windowHeight;
-            const contentScrolled = Math.max(0, scrollTop - heroHeight);
+            if (this.#currentSectionIndex === -1) {
+                // On hero section
+                progress = 0;
+            } else {
+                // On actual content sections (0, 1, 2, 3, 4)
+                progress = ((this.#currentSectionIndex + 1) / totalSections) * 100;
+            }
             
-            const progress = Math.min(100, (contentScrolled / contentHeight) * 100);
-            this.#progressFill.style.width = `${progress}%`;
+            progress = Math.min(progress, 100);
+
+            if (this.#progressFill) {
+                this.#progressFill.style.width = `${progress}%`;
+                
+                // Update ARIA attributes
+                const progressBar = this.#progressFill.closest('.progress-bar');
+                if (progressBar) {
+                    progressBar.setAttribute('aria-valuenow', Math.round(progress));
+                }
+            }
         } catch (error) {
             console.error('Failed to update progress bar:', error);
         }
-    }
-
-    /**
-     * Throttled scroll handler
-     */
-    #onScroll = () => {
-        if (!this.#ticking) {
-            requestAnimationFrame(() => {
-                this.#updateProgressBar();
-                this.#updateParallax();
-                this.#ticking = false;
-            });
-            this.#ticking = true;
-        }
-    };
-
-    /**
-     * Setup main scroll indicator functionality
-     */
-    #setupMainScrollIndicator() {
-        const scrollIndicator = document.querySelector('.scroll-indicator');
-        if (!scrollIndicator) return;
-
-        scrollIndicator.addEventListener('click', () => {
-            const firstSection = document.querySelector('.intro-section');
-            if (firstSection) {
-                firstSection.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                });
-            }
-        });
-
-        // Add hover effects
-        Object.assign(scrollIndicator.style, {
-            cursor: 'pointer',
-            transition: 'transform 0.3s ease, opacity 0.3s ease'
-        });
-
-        scrollIndicator.addEventListener('mouseenter', () => {
-            Object.assign(scrollIndicator.style, {
-                transform: 'scale(1.1)',
-                opacity: '1'
-            });
-        });
-
-        scrollIndicator.addEventListener('mouseleave', () => {
-            Object.assign(scrollIndicator.style, {
-                transform: 'scale(1)',
-                opacity: '0.7'
-            });
-        });
-
-        // Auto-hide functionality
-        window.addEventListener('scroll', () => {
-            const scrolled = window.pageYOffset;
-            if (scrolled > 100) {
-                Object.assign(scrollIndicator.style, {
-                    opacity: '0',
-                    pointerEvents: 'none'
-                });
-            } else {
-                clearTimeout(this.#scrollIndicatorTimeout);
-                Object.assign(scrollIndicator.style, {
-                    opacity: '0.7',
-                    pointerEvents: 'auto'
-                });
-                
-                // Auto-hide after delay when at top
-                this.#scrollIndicatorTimeout = setTimeout(() => {
-                    if (window.pageYOffset <= 100) {
-                        scrollIndicator.style.opacity = '0.5';
-                    }
-                }, 3000);
-            }
-        });
-    }
-
-    /**
-     * Setup step scroll indicators
-     */
-    #setupStepScrollIndicators() {
-        const stepScrollIndicators = document.querySelectorAll('.step-scroll-indicator');
-        
-        stepScrollIndicators.forEach((indicator, index) => {
-            indicator.addEventListener('click', () => {
-                this.#handleStepIndicatorClick(index);
-            });
-
-            // Add hover tooltip
-            indicator.title = index === stepScrollIndicators.length - 1 
-                ? 'Scroll to bottom' 
-                : 'Continue to next step';
-        });
-    }
-
-    /**
-     * Handle step indicator click
-     * @param {number} index - The index of the clicked indicator
-     */
-    #handleStepIndicatorClick(index) {
-        try {
-            const allSections = Array.from(this.#sections);
-            const nextSection = allSections[index + 1];
-            
-            if (nextSection) {
-                nextSection.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                });
-            } else {
-                // If it's the last step, scroll to footer
-                const footer = document.querySelector('.footer');
-                footer?.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                });
-            }
-        } catch (error) {
-            console.error(`Failed to handle step indicator click for index ${index}:`, error);
-        }
-    }
-
-    /**
-     * Setup copy functionality for code blocks
-     */
-    #setupCodeBlockCopy() {
-        document.querySelectorAll('.code-block').forEach(codeBlock => {
-            // Skip if it contains a link
-            if (codeBlock.querySelector('a')) return;
-            
-            this.#addCopyButton(codeBlock);
-        });
-    }
-
-    /**
-     * Add copy button to code block
-     * @param {Element} codeBlock - The code block element
-     */
-    #addCopyButton(codeBlock) {
-        try {
-            const copyButton = document.createElement('button');
-            copyButton.className = 'copy-button';
-            copyButton.innerHTML = '📋';
-            copyButton.title = 'Copy to clipboard';
-            
-            Object.assign(copyButton.style, {
-                position: 'absolute',
-                top: '10px',
-                right: '10px',
-                background: 'rgba(59, 130, 246, 0.2)',
-                border: '1px solid rgba(59, 130, 246, 0.3)',
-                borderRadius: '6px',
-                padding: '8px',
-                color: '#60a5fa',
-                cursor: 'pointer',
-                fontSize: '14px',
-                transition: 'all 0.3s ease'
-            });
-            
-            // Add hover effects
-            copyButton.addEventListener('mouseenter', () => {
-                Object.assign(copyButton.style, {
-                    background: 'rgba(59, 130, 246, 0.3)',
-                    transform: 'scale(1.1)'
-                });
-            });
-            
-            copyButton.addEventListener('mouseleave', () => {
-                Object.assign(copyButton.style, {
-                    background: 'rgba(59, 130, 246, 0.2)',
-                    transform: 'scale(1)'
-                });
-            });
-            
-            // Add click handler
-            copyButton.addEventListener('click', async () => {
-                await this.#copyToClipboard(codeBlock, copyButton);
-            });
-            
-            codeBlock.style.position = 'relative';
-            codeBlock.appendChild(copyButton);
-        } catch (error) {
-            console.error('Failed to add copy button:', error);
-        }
-    }
-
-    /**
-     * Copy text to clipboard with fallback
-     * @param {Element} codeBlock - The code block element
-     * @param {Element} copyButton - The copy button element
-     */
-    async #copyToClipboard(codeBlock, copyButton) {
-        try {
-            const code = codeBlock.querySelector('code');
-            const text = code?.textContent || codeBlock.textContent;
-            
-            if ('clipboard' in navigator) {
-                await navigator.clipboard.writeText(text);
-            } else {
-                // Fallback for older browsers
-                this.#fallbackCopyToClipboard(text);
-            }
-            
-            // Visual feedback
-            this.#showCopySuccess(copyButton);
-            
-        } catch (error) {
-            console.warn('Failed to copy text:', error);
-            // Try fallback even if modern method fails
-            const code = codeBlock.querySelector('code');
-            const text = code?.textContent || codeBlock.textContent;
-            this.#fallbackCopyToClipboard(text);
-            this.#showCopySuccess(copyButton);
-        }
-    }
-
-    /**
-     * Fallback copy method for older browsers
-     * @param {string} text - Text to copy
-     */
-    #fallbackCopyToClipboard(text) {
-        const textArea = document.createElement('textarea');
-        textArea.value = text;
-        textArea.style.position = 'fixed';
-        textArea.style.opacity = '0';
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-    }
-
-    /**
-     * Show copy success feedback
-     * @param {Element} copyButton - The copy button element
-     */
-    #showCopySuccess(copyButton) {
-        const originalContent = copyButton.innerHTML;
-        const originalColor = copyButton.style.color;
-        
-        copyButton.innerHTML = '✅';
-        copyButton.style.color = '#10b981';
-        
-        setTimeout(() => {
-            copyButton.innerHTML = originalContent;
-            copyButton.style.color = originalColor;
-        }, 2000);
-    }
-
-    /**
-     * Update parallax effect for hero section
-     */
-    #updateParallax() {
-        try {
-            const scrolled = window.pageYOffset;
-            const heroContent = document.querySelector('.hero-content');
-            
-            if (heroContent && scrolled < window.innerHeight) {
-                const parallaxValue = scrolled * 0.3;
-                heroContent.style.transform = `translateY(${parallaxValue}px)`;
-                heroContent.style.opacity = 1 - (scrolled / window.innerHeight);
-            }
-        } catch (error) {
-            console.error('Failed to update parallax:', error);
-        }
-    }
-
-    /**
-     * Setup keyboard navigation
-     */
-    #setupKeyboardNavigation() {
-        document.addEventListener('keydown', (e) => {
-            try {
-                if (e.key === 'ArrowDown' || e.key === ' ') {
-                    e.preventDefault();
-                    const currentSection = this.#getCurrentSection();
-                    const nextSection = this.#getNextSection(currentSection);
-                    if (nextSection) {
-                        nextSection.scrollIntoView({ behavior: 'smooth' });
-                    }
-                } else if (e.key === 'ArrowUp') {
-                    e.preventDefault();
-                    const currentSection = this.#getCurrentSection();
-                    const prevSection = this.#getPreviousSection(currentSection);
-                    if (prevSection) {
-                        prevSection.scrollIntoView({ behavior: 'smooth' });
-                    } else {
-                        this.#hero.scrollIntoView({ behavior: 'smooth' });
-                    }
-                }
-            } catch (error) {
-                console.error('Keyboard navigation error:', error);
-            }
-        });
-    }
-
-    /**
-     * Get current section based on scroll position
-     * @returns {Element|null} Current section element
-     */
-    #getCurrentSection() {
-        const scrollPosition = window.pageYOffset + window.innerHeight / 2;
-        for (let i = this.#sections.length - 1; i >= 0; i--) {
-            if (this.#sections[i].offsetTop <= scrollPosition) {
-                return this.#sections[i];
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Get next section
-     * @param {Element|null} currentSection - Current section element
-     * @returns {Element|null} Next section element
-     */
-    #getNextSection(currentSection) {
-        if (!currentSection) return this.#sections[0] || null;
-        const currentIndex = Array.from(this.#sections).indexOf(currentSection);
-        return this.#sections[currentIndex + 1] || null;
-    }
-
-    /**
-     * Get previous section
-     * @param {Element|null} currentSection - Current section element
-     * @returns {Element|null} Previous section element
-     */
-    #getPreviousSection(currentSection) {
-        if (!currentSection) return null;
-        const currentIndex = Array.from(this.#sections).indexOf(currentSection);
-        return this.#sections[currentIndex - 1] || null;
-    }
-
-    /**
-     * Setup smooth scroll for anchor links
-     */
-    #setupAnchorLinks() {
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', (e) => {
-                e.preventDefault();
-                const target = document.querySelector(anchor.getAttribute('href'));
-                target?.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                });
-            });
-        });
-    }
-
-    /**
-     * Apply performance optimizations
-     */
-    #applyPerformanceOptimizations() {
-        // Reduce animations on low-end devices
-        if (navigator.hardwareConcurrency && navigator.hardwareConcurrency < 4) {
-            document.documentElement.style.setProperty('--animation-duration', '0.3s');
-        }
-    }
-
-    /**
-     * Bind all event listeners
-     */
-    #bindEvents() {
-        window.addEventListener('scroll', this.#onScroll);
-        this.#setupMainScrollIndicator();
-        this.#setupStepScrollIndicators();
-        this.#setupCodeBlockCopy();
-        this.#setupKeyboardNavigation();
-        this.#setupAnchorLinks();
-    }
-
-    /**
-     * Initialize the application
-     */
-    #initialize() {
-        this.#updateProgressBar();
-        this.#updateParallax();
-        this.#applyPerformanceOptimizations();
-        this.#initializeShowcaseVideo();
-        console.log('✨ Fedora GNOME installer website loaded successfully!');
     }
 
     /**
@@ -607,25 +389,6 @@ class FedoraInstallerUI {
 
             // Initialize video controls
             this.#initializeVideoControls(video);
-
-            // Intersection observer for performance optimization
-            const videoObserver = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        // Video is visible, ensure it's playing
-                        this.#ensureVideoPlaying(video);
-                    } else {
-                        // Video is not visible, pause to save resources
-                        video.pause();
-                        this.#updatePlayPauseButton(false);
-                    }
-                });
-            }, {
-                threshold: 0.25,
-                rootMargin: '50px'
-            });
-
-            videoObserver.observe(video);
 
             // Handle user interaction preferences
             this.#respectUserPreferences(video);
@@ -667,20 +430,6 @@ class FedoraInstallerUI {
         video.addEventListener('play', () => this.#updatePlayPauseButton(true));
         video.addEventListener('pause', () => this.#updatePlayPauseButton(false));
         video.addEventListener('volumechange', () => this.#updateMuteButton(video.muted));
-
-        // Keyboard accessibility
-        video.addEventListener('keydown', (e) => {
-            switch(e.code) {
-                case 'Space':
-                    e.preventDefault();
-                    playPauseBtn.click();
-                    break;
-                case 'KeyM':
-                    e.preventDefault();
-                    muteBtn.click();
-                    break;
-            }
-        });
 
         // Initialize button states
         this.#updatePlayPauseButton(!video.paused);
@@ -728,27 +477,6 @@ class FedoraInstallerUI {
             volumeIcon.style.display = 'block';
             mutedIcon.style.display = 'none';
             muteBtn.setAttribute('aria-label', 'Mute video');
-        }
-    }
-
-    /**
-     * Ensure video is playing when visible
-     * @param {HTMLVideoElement} video 
-     */
-    #ensureVideoPlaying(video) {
-        if (video.paused && video.readyState >= 3) {
-            const playPromise = video.play();
-            
-            if (playPromise !== undefined) {
-                playPromise
-                    .then(() => {
-                        // Video started playing successfully
-                    })
-                    .catch(error => {
-                        // Auto-play was prevented, which is fine
-                        console.log('Video autoplay prevented (user preference):', error.name);
-                    });
-            }
         }
     }
 
@@ -875,12 +603,19 @@ class FedoraInstallerUI {
     }
 
     /**
+     * Initialize the application
+     */
+    #initialize() {
+        this.#updateProgressBar();
+        this.#initializeShowcaseVideo();
+        console.log('✨ Fedora GNOME installer website loaded with page transitions!');
+    }
+
+    /**
      * Cleanup method for removing event listeners
      */
     destroy() {
         try {
-            window.removeEventListener('scroll', this.#onScroll);
-            this.#sectionObserver?.disconnect();
             clearTimeout(this.#scrollIndicatorTimeout);
         } catch (error) {
             console.error('Failed to cleanup FedoraInstallerUI:', error);
@@ -892,8 +627,8 @@ class FedoraInstallerUI {
 document.addEventListener('DOMContentLoaded', () => {
     try {
         // Feature detection for required APIs
-        if (!('IntersectionObserver' in window)) {
-            console.warn('IntersectionObserver not supported. Some features may not work.');
+        if (!('requestAnimationFrame' in window)) {
+            console.warn('requestAnimationFrame not supported. Some features may not work.');
             return;
         }
 
