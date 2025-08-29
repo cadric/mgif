@@ -15,7 +15,7 @@ const error = console.error.bind(console); // Always log errors
  */
 class FedoraInstallerUI {
     // Private fields
-    #progressFill;
+    #progressEl;
     #collectedSteps;
     #sections;
     #hero;
@@ -49,7 +49,7 @@ class FedoraInstallerUI {
 
     constructor() {
         // Detect user preferences
-        this.#prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+        this.#prefersReducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
         
         this.#initializeElements();
         this.#setupPageTransitions();
@@ -64,23 +64,13 @@ class FedoraInstallerUI {
      */
     #initializeElements() {
         try {
-            this.#progressFill = document.querySelector('.progress-fill');
+            this.#progressEl = document.getElementById('progress');
             this.#collectedSteps = document.querySelector('.collected-steps');
             this.#sections = document.querySelectorAll('.section[data-step]');
             this.#hero = document.querySelector('.hero');
 
-            if (!this.#progressFill || !this.#collectedSteps || !this.#hero) {
+            if (!this.#progressEl || !this.#collectedSteps || !this.#hero) {
                 throw new Error('Required DOM elements not found');
-            }
-
-            // Ensure progress bar has proper ARIA attributes
-            const progressBar = this.#progressFill.closest('.progress-bar');
-            if (progressBar && !progressBar.hasAttribute('role')) {
-                progressBar.setAttribute('role', 'progressbar');
-                progressBar.setAttribute('aria-valuemin', '0');
-                progressBar.setAttribute('aria-valuemax', '100');
-                progressBar.setAttribute('aria-valuenow', '0');
-                progressBar.setAttribute('aria-label', 'Installation progress');
             }
 
             // Hide all sections initially except hero
@@ -358,6 +348,45 @@ class FedoraInstallerUI {
     }
 
     /**
+     * Render section immediately without animation (for initial page load)
+     * @param {number} sectionIndex - Section index (-1 for hero, 0+ for sections)
+     */
+    #renderSectionImmediate(sectionIndex) {
+        try {
+            // Hide all sections and hero first
+            this.#hero?.classList.remove('visible');
+            this.#sections.forEach(section => {
+                section.classList.remove('visible', 'active');
+            });
+
+            // Show target section/hero
+            if (sectionIndex === -1) {
+                // Show hero
+                this.#hero?.classList.add('visible');
+            } else if (sectionIndex >= 0 && sectionIndex < this.#sections.length) {
+                // Show target section
+                const targetSection = this.#sections[sectionIndex];
+                if (targetSection) {
+                    targetSection.classList.add('visible', 'active');
+                    
+                    // Collect step immediately (without animation)
+                    const stepId = targetSection.getAttribute('data-step');
+                    if (stepId && this.#stepTitles[stepId]) {
+                        this.#collectStep(stepId, this.#stepTitles[stepId], sectionIndex);
+                    }
+                }
+            }
+
+            // Update internal state
+            this.#currentSectionIndex = sectionIndex;
+            this.#updateProgressBar();
+            
+        } catch (error) {
+            error('Failed to render section immediately:', error);
+        }
+    }
+
+    /**
      * Setup History API for deep linking and browser navigation
      */
     #setupHistoryAPI() {
@@ -367,9 +396,8 @@ class FedoraInstallerUI {
             if (hash) {
                 const sectionIndex = this.#getSectionIndexFromHash(hash);
                 if (sectionIndex !== null && sectionIndex !== this.#currentSectionIndex) {
-                    // Navigate to the section without animation initially
-                    this.#currentSectionIndex = sectionIndex;
-                    this.#goToSection(sectionIndex);
+                    // Render section immediately without animation for initial load
+                    this.#renderSectionImmediate(sectionIndex);
                 }
             }
         } catch (error) {
@@ -560,19 +588,17 @@ class FedoraInstallerUI {
                 ? Math.min(100, Math.max(0, (currentStepNumber / totalSteps) * 100))
                 : 0;
 
-            if (this.#progressFill) {
-                this.#progressFill.style.width = `${progress}%`;
+            const progressEl = this.#progressEl;
+            if (progressEl) {
+                // Use semantic progress element
+                progressEl.value = progress;
+                progressEl.setAttribute('aria-valuenow', String(Math.round(progress)));
                 
-                const progressBar = this.#progressFill.closest('.progress-bar');
-                if (progressBar) {
-                    progressBar.setAttribute('aria-valuenow', String(Math.round(progress)));
-                    
-                    // Update aria-valuetext for better screen reader experience
-                    const stepText = currentStepNumber > 0 
-                        ? `Step ${currentStepNumber} of ${totalSteps}`
-                        : 'Getting started';
-                    progressBar.setAttribute('aria-valuetext', stepText);
-                }
+                // Update aria-valuetext for better screen reader experience
+                const stepText = currentStepNumber > 0 
+                    ? `Step ${currentStepNumber} of ${totalSteps}`
+                    : 'Getting started';
+                progressEl.setAttribute('aria-valuetext', stepText);
             }
         } catch (error) {
             error('Failed to update progress bar:', error);
@@ -631,11 +657,11 @@ class FedoraInstallerUI {
      */
     #initializeVideoControls(video) {
         const playPauseBtn = document.getElementById('play-pause-btn');
-        const muteBtn = document.getElementById('mute-btn');
+        const playOverlay = document.getElementById('video-play-overlay');
 
-        if (!playPauseBtn || !muteBtn) return;
+        if (!playPauseBtn) return;
 
-        // Play/Pause functionality
+        // Play/Pause functionality for control button
         playPauseBtn.addEventListener('click', () => {
             if (video.paused) {
                 video.play().catch(error => {
@@ -646,20 +672,39 @@ class FedoraInstallerUI {
             }
         });
 
-        // Mute/Unmute functionality
-        muteBtn.addEventListener('click', () => {
-            video.muted = !video.muted;
-            this.#updateMuteButton(video.muted);
-        });
+        // Large play overlay functionality
+        if (playOverlay) {
+            const overlayBtn = playOverlay.querySelector('.video-play-overlay-btn');
+            if (overlayBtn) {
+                overlayBtn.addEventListener('click', () => {
+                    video.play().catch(error => {
+                        console.log('Play failed:', error.name);
+                        this.#showErrorToast('Failed to play video. Please try again.');
+                    });
+                    // Hide overlay after clicking
+                    playOverlay.classList.add('hidden');
+                });
+            }
+        }
 
         // Update button states when video state changes
-        video.addEventListener('play', () => this.#updatePlayPauseButton(true));
-        video.addEventListener('pause', () => this.#updatePlayPauseButton(false));
-        video.addEventListener('volumechange', () => this.#updateMuteButton(video.muted));
+        video.addEventListener('play', () => {
+            this.#updatePlayPauseButton(true);
+            // Hide overlay when video starts playing
+            if (playOverlay) {
+                playOverlay.classList.add('hidden');
+            }
+        });
+        video.addEventListener('pause', () => {
+            this.#updatePlayPauseButton(false);
+            // Show overlay when video is paused
+            if (playOverlay) {
+                playOverlay.classList.remove('hidden');
+            }
+        });
 
         // Initialize button states
         this.#updatePlayPauseButton(!video.paused);
-        this.#updateMuteButton(video.muted);
     }
 
     /**
@@ -682,29 +727,6 @@ class FedoraInstallerUI {
             playIcon?.classList.remove('hidden');
             pauseIcon?.classList.add('hidden');
             playPauseBtn.setAttribute('aria-label', 'Play video');
-        }
-    }
-
-    /**
-     * Update mute button appearance
-     * @param {boolean} isMuted 
-     */
-    #updateMuteButton(isMuted) {
-        const muteBtn = document.getElementById('mute-btn');
-        if (!muteBtn) return;
-
-        const volumeIcon = muteBtn.querySelector('.volume-icon');
-        const mutedIcon = muteBtn.querySelector('.muted-icon');
-
-        if (isMuted) {
-            // Use CSS classes instead of inline styles
-            volumeIcon?.classList.add('hidden');
-            mutedIcon?.classList.remove('hidden');
-            muteBtn.setAttribute('aria-label', 'Unmute video');
-        } else {
-            volumeIcon?.classList.remove('hidden');
-            mutedIcon?.classList.add('hidden');
-            muteBtn.setAttribute('aria-label', 'Mute video');
         }
     }
 
@@ -800,7 +822,8 @@ class FedoraInstallerUI {
         svg.setAttribute('height', '64');
         svg.setAttribute('viewBox', '0 0 24 24');
         svg.setAttribute('fill', 'currentColor');
-        svg.style.opacity = '0.5';
+        // Use CSS class instead of inline style for CSP compliance
+        svg.classList.add('is-muted');
         
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         path.setAttribute('d', 'M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8 12.5v-9l6 4.5-6 4.5z');
@@ -1096,7 +1119,7 @@ function initializeProgressiveEnhancements() {
                 e.preventDefault();
                 
                 // Respect reduced motion preference
-                const smoothOK = !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+                const smoothOK = !matchMedia('(prefers-reduced-motion: reduce)').matches;
                 
                 // Set focus with proper tabindex handling
                 const priorTabindex = targetElement.getAttribute('tabindex');

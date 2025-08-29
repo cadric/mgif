@@ -216,6 +216,8 @@ body {
   /* Full height for page transitions */
   height: 100vh;
   position: relative;
+  /* Add top padding to prevent fixed header from covering content */
+  padding-top: 70px;
 }
 
 /* Focus management for accessibility */
@@ -253,42 +255,75 @@ body {
    PROGRESS INDICATOR COMPONENT
    ============================================================================ */
 
+/* ============================================================================
+   PROGRESS INDICATOR
+   ============================================================================ */
+
 .progress-container {
   position: fixed;
-  inset-block-start: 0;
-  inset-inline: 0;
+  top: 0;
+  left: 0;
+  right: 0;
   z-index: var(--z-index-fixed);
-  background-color: color-mix(in srgb, var(--color-bg-primary) 90%, transparent);
-  backdrop-filter: blur(10px);
-  border-block-end: 1px solid var(--color-bg-secondary);
-  /* Support for older browsers */
-  background: rgba(10, 10, 10, 0.9);
-}
-
-.progress-bar {
-  block-size: 3px;
   background-color: var(--color-bg-secondary);
-  position: relative;
-  overflow: hidden;
+  border-bottom: 1px solid var(--color-border-subtle);
+  padding: var(--space-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  min-height: 60px;
 }
 
-.progress-fill {
-  block-size: 100%;
+/* Modern progress element styling */
+.progress {
+  flex: 1;
+  height: 0.5rem;
+  background-color: var(--color-bg-tertiary);
+  border: none;
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+/* Progress bar fill styling */
+.progress::-webkit-progress-bar {
+  background-color: var(--color-bg-tertiary);
+  border-radius: var(--radius-full);
+}
+
+.progress::-webkit-progress-value {
   background: linear-gradient(90deg, var(--color-brand-primary), var(--color-brand-secondary));
-  inline-size: 0%;
-  transition: inline-size var(--transition-base);
-  /* Enhance with animation */
-  background-size: 200% 100%;
-  animation: shimmer 2s ease-in-out infinite;
+  border-radius: var(--radius-full);
+  transition: width var(--transition-base);
+  position: relative;
+}
+
+/* Firefox progress styling */
+.progress::-moz-progress-bar {
+  background: linear-gradient(90deg, var(--color-brand-primary), var(--color-brand-secondary));
+  border-radius: var(--radius-full);
+  transition: width var(--transition-base);
+}
+
+/* Add shimmer effect to progress bar */
+.progress::-webkit-progress-value::after,
+.progress::-moz-progress-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  animation: shimmer 2s infinite;
 }
 
 @keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
 /* Collected Steps Navigation */
@@ -869,6 +904,82 @@ body {
   block-size: 16px;
 }
 
+/* Large play overlay */
+.video-play-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  transition: opacity var(--transition-base);
+  z-index: 15;
+  border-radius: calc(var(--radius-lg) - 2px);
+}
+
+.video-play-overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.video-play-overlay-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  padding: var(--space-2xl) var(--space-xl);
+  background: rgba(0, 0, 0, 0.85);
+  border: 2px solid var(--color-brand-primary);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: all 0.3s var(--timing-ease-out);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  min-width: 250px;
+  text-align: center;
+  box-shadow: 
+    0 20px 25px -5px rgba(0, 0, 0, 0.3),
+    0 10px 10px -5px rgba(0, 0, 0, 0.1),
+    0 0 20px rgba(59, 130, 246, 0.2);
+}
+
+.video-play-overlay-btn:hover,
+.video-play-overlay-btn:focus-visible {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: var(--color-interactive-hover);
+  color: var(--color-interactive-hover);
+  transform: scale(1.05) translateY(-2px);
+  box-shadow: 
+    0 25px 30px -5px rgba(0, 0, 0, 0.4),
+    0 15px 15px -5px rgba(0, 0, 0, 0.15),
+    0 0 30px rgba(59, 130, 246, 0.4);
+}
+
+.video-play-overlay-btn:focus-visible {
+  outline: 3px solid var(--color-brand-primary);
+  outline-offset: 3px;
+}
+
+.play-overlay-icon {
+  width: 4rem;
+  height: 4rem;
+  margin-bottom: var(--space-xs);
+}
+
+.play-overlay-text {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.025em;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
 /* Focus states for accessibility */
 .showcase-video:focus-visible {
   outline: 2px solid var(--color-brand-primary);
@@ -909,6 +1020,21 @@ body {
     bottom: 12px;
     padding: var(--space-xs) var(--space-sm);
   }
+  
+  /* Responsive play overlay */
+  .video-play-overlay-btn {
+    min-width: 200px;
+    padding: var(--space-xl) var(--space-md);
+  }
+  
+  .play-overlay-icon {
+    width: 3rem;
+    height: 3rem;
+  }
+  
+  .play-overlay-text {
+    font-size: var(--font-size-lg);
+  }
 }
 
 /* Reduced motion preference */
@@ -919,6 +1045,11 @@ body {
   
   .showcase-video {
     transition: opacity 0.3s ease;
+  }
+  
+  .video-play-overlay-btn:hover,
+  .video-play-overlay-btn:focus-visible {
+    transform: none;
   }
   
   .video-controls {
@@ -1157,6 +1288,21 @@ main:has(#step-5.visible) + .footer {
 
 /* Extra small screens */
 @media (max-width: 23.4375rem) { /* 375px */
+  /* Ultra-compact progress container */
+  .progress-container {
+    padding: var(--space-2xs) var(--space-xs);
+    min-height: 40px;
+  }
+  
+  body {
+    padding-top: 40px;
+  }
+  
+  /* Hide collected steps on very small screens to save space */
+  .collected-steps {
+    display: none;
+  }
+  
   .hero-content {
     padding-block-end: var(--space-sm);
     gap: var(--space-md);
@@ -1181,6 +1327,30 @@ main:has(#step-5.visible) + .footer {
     --space-2xl: 2rem;
     --space-3xl: 2.5rem;
     --space-4xl: 3rem;
+  }
+  
+  /* Compact progress container on mobile */
+  .progress-container {
+    padding: var(--space-xs) var(--space-sm);
+    min-height: 50px;
+    gap: var(--space-sm);
+  }
+  
+  /* Reduce body padding for smaller progress container */
+  body {
+    padding-top: 50px;
+  }
+  
+  /* Make collected steps smaller on mobile */
+  .collected-steps {
+    gap: var(--space-xs);
+    padding-inline: var(--space-sm);
+  }
+  
+  .collected-step {
+    padding-block: var(--space-2xs);
+    padding-inline: var(--space-xs);
+    font-size: var(--font-size-xs);
   }
   
   .title {
@@ -1507,24 +1677,32 @@ button.copy.copy-fail {
   align-items: center;
   justify-content: center;
   min-height: 300px;
-  background: var(--color-bg-secondary);
-  border-radius: var(--radius-lg);
-  text-align: center;
-  color: var(--color-text-secondary);
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-subtle);
 }
 
 .video-error-fallback .fallback-link {
   color: var(--color-brand-primary);
   text-decoration: none;
   font-weight: var(--font-weight-medium);
-  margin-top: var(--space-md);
-  display: inline-block;
   transition: var(--transition-colors);
 }
 
 .video-error-fallback .fallback-link:hover {
   color: var(--color-interactive-hover);
-  text-decoration: underline;
+}
+
+/* Copy helper textarea for CSP compliance */
+.copy-helper-textarea {
+  position: absolute;
+  left: -9999px;
+  opacity: 0;
+}
+
+/* CSP-compliant utility classes */
+.is-muted {
+  opacity: 0.5;
 }
 
 /* Copy helper textarea for CSP compliance */
