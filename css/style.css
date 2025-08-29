@@ -1097,6 +1097,33 @@ body {
   font-size: var(--font-size-sm);
 }
 
+/* Footer er fixed i bunden, skjult som udgangspunkt */
+.footer {
+  position: fixed;
+  inset-inline: 0;
+  inset-block-end: 0;
+  z-index: 4;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(20px);
+  transition:
+    opacity 0.4s ease,
+    transform 0.4s ease,
+    visibility 0.4s step-end;
+}
+
+/* Når step 5 er synlig, viser vi footeren */
+main:has(#step-5.visible) + .footer {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  transition:
+    opacity 0.4s ease,
+    transform 0.4s ease,
+    visibility 0.4s step-start;
+}
+
+
 /* ============================================================================
    RESPONSIVE DESIGN
    ============================================================================ */
