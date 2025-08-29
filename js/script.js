@@ -23,7 +23,6 @@ class FedoraInstallerUI {
     #isTransitioning = false;
     #touchStartY = 0;
     #touchStartX = 0;
-    #scrollIndicatorTimeout = null;
     
     // Mouse cursor arrow fields (Hero section only)
     #cursorCanvas;
@@ -220,49 +219,24 @@ class FedoraInstallerUI {
             }
         });
 
-        // Touch/swipe events scoped to hero only to avoid blocking native behaviors
-        this.#hero.addEventListener('touchstart', (e) => {
-            if (!e.touches?.length) return;
-            this.#touchStartY = e.touches[0].clientY;
-            this.#touchStartX = e.touches[0].clientX;
-        }, { passive: true });
+        // Touch/swipe events for hero section
+        this.#setupTouchHandlers(this.#hero);
 
-        this.#hero.addEventListener('touchmove', (e) => {
-            // Only prevent default if we're doing page transitions, not in scrollable areas
-            if (this.#isFromScrollableElement(e.target)) return;
-            e.preventDefault();
-        }, { passive: false });
+        // Touch/swipe events for sections with scroll-aware handling
+        this.#sections.forEach(section => {
+            this.#setupTouchHandlers(section);
+        });
 
-        this.#hero.addEventListener('touchend', (e) => {
-            if (this.#isTransitioning || !e.changedTouches?.length) return;
-
-            const touchEndY = e.changedTouches[0].clientY;
-            const touchEndX = e.changedTouches[0].clientX;
-            const deltaY = this.#touchStartY - touchEndY;
-            const deltaX = this.#touchStartX - touchEndX;
-
-            // Dead zone and angle check to avoid accidental swipes
-            const minDistance = 24;
-            const absDeltaY = Math.abs(deltaY);
-            const absDeltaX = Math.abs(deltaX);
-            
-            if (absDeltaY < minDistance || absDeltaX > absDeltaY) {
-                return; // Not a clear vertical swipe
-            }
-
-            if (deltaY > 0) {
-                // Swipe up - go to next section
-                this.#goToNextSection();
-            } else {
-                // Swipe down - go to previous section
-                this.#goToPreviousSection();
-            }
-        }, { passive: true });
-
-        // Mouse wheel navigation with scrollable element detection
+        // Mouse wheel navigation with scroll-aware detection
         document.addEventListener('wheel', (e) => {
             if (this.#isTransitioning) return;
             if (this.#isFromScrollableElement(e.target)) return;
+            
+            // Check if we're in a scrollable section and handle accordingly
+            if (this.#shouldAllowSectionScroll(e)) {
+                // Allow natural scrolling within the section
+                return;
+            }
             
             e.preventDefault();
             
@@ -295,12 +269,120 @@ class FedoraInstallerUI {
     }
 
     /**
+     * Setup touch event handlers for an element
+     * @param {HTMLElement} element - Element to add touch handlers to
+     */
+    #setupTouchHandlers(element) {
+        element.addEventListener('touchstart', (e) => {
+            if (!e.touches?.length) return;
+            this.#touchStartY = e.touches[0].clientY;
+            this.#touchStartX = e.touches[0].clientX;
+        }, { passive: true });
+
+        // Only add touchmove for hero to prevent default scrolling
+        if (element === this.#hero) {
+            element.addEventListener('touchmove', (e) => {
+                // Only prevent default if we're doing page transitions, not in scrollable areas
+                if (this.#isFromScrollableElement(e.target)) return;
+                e.preventDefault();
+            }, { passive: false });
+        }
+
+        element.addEventListener('touchend', (e) => {
+            this.#handleTouchEnd(e);
+        }, { passive: true });
+    }
+
+    /**
+     * Handle touch end events with scroll awareness
+     * @param {TouchEvent} e - Touch event
+     */
+    #handleTouchEnd(e) {
+        if (this.#isTransitioning || !e.changedTouches?.length) return;
+
+        const touchEndY = e.changedTouches[0].clientY;
+        const touchEndX = e.changedTouches[0].clientX;
+        const deltaY = this.#touchStartY - touchEndY;
+        const deltaX = this.#touchStartX - touchEndX;
+
+        // Dead zone and angle check to avoid accidental swipes
+        const minDistance = 24;
+        const absDeltaY = Math.abs(deltaY);
+        const absDeltaX = Math.abs(deltaX);
+        
+        if (absDeltaY < minDistance || absDeltaX > absDeltaY) {
+            return; // Not a clear vertical swipe
+        }
+
+        // Create a mock wheel event for scroll position checking
+        const mockWheelEvent = { deltaY: deltaY > 0 ? 1 : -1 };
+        
+        // Check if we should allow section scrolling (only for sections, not hero)
+        if (this.#currentSectionIndex !== -1 && this.#shouldAllowSectionScroll(mockWheelEvent)) {
+            return; // Let native scrolling handle it
+        }
+
+        if (deltaY > 0) {
+            // Swipe up - go to next section
+            this.#goToNextSection();
+        } else {
+            // Swipe down - go to previous section
+            this.#goToPreviousSection();
+        }
+    }
+
+    /**
      * Check if event originated from a scrollable element
      * @param {Element} target - Event target
      * @returns {boolean} - True if from scrollable element
      */
     #isFromScrollableElement(target) {
         return target && target.closest('pre, code, textarea, .scroll, [data-scrollable="true"], .video-showcase');
+    }
+
+    /**
+     * Check if we should allow scrolling within the current section
+     * @param {WheelEvent} e - Wheel event
+     * @returns {boolean} - True if section should scroll, false if should navigate
+     */
+    #shouldAllowSectionScroll(e) {
+        // If we're on hero, always use page navigation
+        if (this.#currentSectionIndex === -1) {
+            return false;
+        }
+
+        // Get the current section element and its container
+        const currentSection = this.#sections[this.#currentSectionIndex];
+        if (!currentSection || !currentSection.classList.contains('visible')) {
+            return false;
+        }
+
+        // Find the scrollable container within the section
+        const container = currentSection.querySelector('.container');
+        if (!container) {
+            return false;
+        }
+
+        // Check if the container has scrollable content
+        const scrollTop = container.scrollTop;
+        const scrollHeight = container.scrollHeight;
+        const clientHeight = container.clientHeight;
+        
+        // If content doesn't overflow, use page navigation
+        if (scrollHeight <= clientHeight) {
+            return false;
+        }
+
+        // Check scroll direction and position
+        if (e.deltaY > 0) {
+            // Scrolling down - allow if not at bottom
+            const isAtBottom = Math.abs(scrollTop + clientHeight - scrollHeight) < 1;
+            return !isAtBottom;
+        } else {
+            // Scrolling up - allow if not at top
+            const isAtTop = scrollTop < 1;
+            return !isAtTop;
+        }
     }
 
     /**
@@ -717,7 +799,7 @@ class FedoraInstallerUI {
                 overlayBtn.addEventListener('click', () => {
                     video.play().catch(error => {
                         console.log('Play failed:', error.name);
-                        this.#showErrorToast('Failed to play video. Please try again.');
+                        showErrorToast('Failed to play video. Please try again.');
                     });
                     // Hide overlay after clicking
                     playOverlay.classList.add('hidden');
@@ -827,7 +909,7 @@ class FedoraInstallerUI {
         playButton.addEventListener('click', () => {
             video.play().catch(error => {
                 error('Video play failed:', error);
-                this.#showErrorToast('Failed to play video. Please try again.');
+                showErrorToast('Failed to play video. Please try again.');
             });
             playButton.remove();
         });
@@ -893,34 +975,7 @@ class FedoraInstallerUI {
         video.replaceWith(fallback);
     }
 
-    /**
-     * Show error toast notification
-     * @param {string} message - Error message to display
-     */
-    #showErrorToast(message) {
-        // Create or reuse existing toast
-        let toast = document.querySelector('.toast');
-        if (!toast) {
-            toast = document.createElement('div');
-            toast.className = 'toast toast-error';
-            toast.setAttribute('hidden', '');
-            // Add accessibility attributes for assistive technologies
-            toast.setAttribute('role', 'status');
-            toast.setAttribute('aria-live', 'polite');
-            toast.setAttribute('aria-atomic', 'true');
-            document.body.appendChild(toast);
-        }
-        
-        toast.textContent = message;
-        toast.classList.remove('toast-success');
-        toast.classList.add('toast-error');
-        toast.removeAttribute('hidden');
-        
-        // Auto-hide after 5 seconds
-        setTimeout(() => {
-            toast.setAttribute('hidden', '');
-        }, 5000);
-    }
+
 
     /**
      * Initialize the application
@@ -965,7 +1020,16 @@ class FedoraInstallerUI {
         
         if (this.#cursorCanvas) {
             this.#cursorCanvas.classList.remove('active');
-            this.#cursorCtx?.clearRect(0, 0, this.#cursorCanvas.width, this.#cursorCanvas.height);
+            this.#clearCanvas();
+        }
+    }
+
+    /**
+     * Clear the cursor canvas
+     */
+    #clearCanvas() {
+        if (this.#cursorCtx && this.#cursorCanvas) {
+            this.#cursorCtx.clearRect(0, 0, this.#cursorCanvas.width, this.#cursorCanvas.height);
         }
     }
 
@@ -979,7 +1043,7 @@ class FedoraInstallerUI {
         }
 
         // Clear canvas
-        this.#cursorCtx.clearRect(0, 0, this.#cursorCanvas.width, this.#cursorCanvas.height);
+        this.#clearCanvas();
 
         if (this.#mousePosition.x !== null && this.#mousePosition.y !== null) {
             // Get target position
@@ -1072,9 +1136,6 @@ class FedoraInstallerUI {
         try {
             // Stop cursor animation
             this.#stopCursorAnimation();
-            
-            // Clear timeouts
-            clearTimeout(this.#scrollIndicatorTimeout);
             
             // Remove toast if it exists
             const toast = document.querySelector('.toast');

@@ -738,29 +738,59 @@ body {
   padding-inline: var(--space-lg);
 }
 
+/* Section containers have scrollable content */
+.section .container {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-block: var(--space-4xl);
+  -webkit-overflow-scrolling: touch;
+  /* Ensure content flows naturally */
+  display: flex;
+  flex-direction: column;
+}
+
 /* Section styling with page transitions */
 .section {
-  min-block-size: 100vh;
-  /* Use modern viewport units when supported */
-  min-block-size: 100dvh;
-  display: flex;
-  align-items: center;
-  padding-block: var(--space-4xl);
-  /* Page transition setup */
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
+  right: 0;
+  bottom: 0; /* ensures full viewport height */
+
+  display: flex;
+  flex-direction: column; /* stack header at top, content scrolls below */
+  align-items: stretch;
+
+  background: var(--color-bg-primary);
   z-index: 1;
   opacity: 0;
   visibility: hidden;
   transform: translateY(100px) scale(0.95);
-  transition: 
+  transition:
     opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94),
     transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94),
     visibility 0.8s step-end;
-  /* Background for better readability */
-  background: var(--color-bg-primary);
+
+  overflow: hidden; /* section container itself should not scroll */
+}
+
+/* Custom scrollbar for container */
+.section .container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.section .container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.section .container::-webkit-scrollbar-thumb {
+  background-color: var(--color-border-accent);
+  border-radius: var(--radius-sm);
+}
+
+.section .container::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-brand-primary);
 }
 
 .section.visible {
@@ -771,6 +801,14 @@ body {
     opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94),
     transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94),
     visibility 0.8s step-start;
+}
+
+/* Visual feedback for scrollable sections */
+.section.visible {
+  /* Add subtle shadow inset to indicate scrollable content when overflowing */
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .section.active {
@@ -1142,26 +1180,6 @@ body {
   overflow-x: auto;
   /* Improve code readability */
   font-variant-ligatures: common-ligatures;
-  /* Better scrollbar styling */
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-border-accent) transparent;
-}
-
-.code-block::-webkit-scrollbar {
-  block-size: 8px;
-}
-
-.code-block::-webkit-scrollbar-track {
-  background-color: transparent;
-}
-
-.code-block::-webkit-scrollbar-thumb {
-  background-color: var(--color-border-accent);
-  border-radius: var(--radius-sm);
-}
-
-.code-block::-webkit-scrollbar-thumb:hover {
-  background-color: var(--color-brand-primary);
 }
 
 .code-block code {
@@ -1301,6 +1319,35 @@ body {
   text-align: center;
   margin-block-start: var(--space-lg);
   margin-block-end: 0;
+}
+
+/* Responsive adjustments for security section on smaller screens */
+@media (max-height: 700px) {
+  .security-section {
+    padding: var(--space-lg);
+    margin-block: var(--space-lg);
+  }
+  
+  .security-section h4 {
+    font-size: var(--font-size-base);
+    margin-block-end: var(--space-sm);
+  }
+  
+  .security-section p {
+    font-size: var(--font-size-xs);
+    margin-block-end: var(--space-sm);
+  }
+  
+  .hash-display {
+    padding: var(--space-sm);
+    margin-block: var(--space-sm);
+  }
+  
+  .hash-value {
+    font-size: var(--font-size-xs);
+    line-height: var(--line-height-base);
+    padding: var(--space-xs);
+  }
 }
 
 /* ============================================================================
@@ -1675,13 +1722,6 @@ main:has(#step-5.visible) + .footer {
 }
 
 /* Firefox-specific optimizations */
-@-moz-document url-prefix() {
-  .code-block {
-    scrollbar-width: thin;
-    scrollbar-color: var(--color-border-accent) transparent;
-  }
-}
-
 /* Edge/Chromium-specific optimizations */
 @supports (backdrop-filter: blur(10px)) {
   .progress-container {
@@ -1704,13 +1744,6 @@ main:has(#step-5.visible) + .footer {
 /* Remove will-change after animation completes */
 .section.visible {
   will-change: auto;
-}
-
-/* Optimize font loading */
-@font-face {
-  font-family: 'SF Pro Display Fallback';
-  src: local('Arial');
-  font-display: swap;
 }
 
 /* ============================================================================
@@ -1906,19 +1939,32 @@ button.copy.copy-fail {
 .mb-auto { margin-block-end: auto; }
 .mx-auto { margin-inline: auto; }
 
-/* Flexbox utilities */
-.flex { display: flex; }
-.flex-col { flex-direction: column; }
-.items-center { align-items: center; }
-.justify-center { justify-content: center; }
-
-/* Grid utilities */
-.grid { display: grid; }
-.grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
-
 /* Visibility utilities */
 .hidden { display: none; }
 .invisible { visibility: hidden; }
+
+/* Scrollbar utility */
+.scrollable {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-accent) transparent;
+}
+
+.scrollable::-webkit-scrollbar {
+  block-size: 8px;
+}
+
+.scrollable::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+.scrollable::-webkit-scrollbar-thumb {
+  background-color: var(--color-border-accent);
+  border-radius: 4px;
+}
+
+.scrollable::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-text-secondary);
+}
 
 /* ============================================================================
    DARK MODE SPECIFIC STYLES
@@ -1937,40 +1983,3 @@ button.copy.copy-fail {
   }
 }
 
-/* ============================================================================
-   COMPONENT STATES
-   ============================================================================ */
-
-/* Loading states */
-.loading {
-  opacity: 0.7;
-  pointer-events: none;
-  cursor: not-allowed;
-}
-
-.loading * {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
-/* Error states */
-.error {
-  border-color: #ef4444;
-  background-color: color-mix(in srgb, #ef4444 10%, transparent);
-  color: #fca5a5;
-}
-
-/* Success states */
-.success {
-  border-color: var(--color-brand-success);
-  background-color: color-mix(in srgb, var(--color-brand-success) 10%, transparent);
-  color: #6ee7b7;
-}

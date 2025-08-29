@@ -77,7 +77,7 @@
 
         <!-- Introduction Section -->
         <article class="section intro-section" data-step="intro" id="introduction">
-            <div class="container">
+            <div class="container scrollable">
                 <header class="step-content">
                     <h2>Minimal Fedora GNOME Setup</h2>
                     <p>An easy script to install a minimal version of Fedora with GNOME desktop environment. Install a small curated selection of flatpak apps to get started with and decide if you want a pure GNOME experience, Windows-style look, or macOS appearance for your desktop.</p>
@@ -130,14 +130,14 @@
 
         <!-- Step 1: Download -->
         <article class="section" data-step="1" id="step-1">
-            <div class="container">
+            <div class="container scrollable">
                 <header class="step-header">
                     <span class="step-number" aria-label="Step 1">01</span>
                     <h2>Download Fedora Everything</h2>
                 </header>
                 <div class="step-content">
                     <p>Download and install Fedora Everything from the official website:</p>
-                    <div class="code-block" role="region" aria-label="Download link">
+                    <div class="code-block scrollable" role="region" aria-label="Download link">
                         <a href="https://fedoraproject.org/everything/download" target="_blank" rel="noopener noreferrer">
                             https://fedoraproject.org/everything/download
                         </a>
@@ -157,14 +157,14 @@
 
         <!-- Step 2: Login -->
         <article class="section" data-step="2" id="step-2">
-            <div class="container">
+            <div class="container scrollable">
                 <header class="step-header">
                     <span class="step-number" aria-label="Step 2">02</span>
                     <h2>Login and Switch to Root</h2>
                 </header>
                 <div class="step-content">
                     <p>Login with your user account and switch to root privileges:</p>
-                    <div class="code-block" role="region" aria-label="Terminal command">
+                    <div class="code-block scrollable" role="region" aria-label="Terminal command">
                         <code>sudo su -</code>
                     </div>
                 </div>
@@ -177,7 +177,7 @@
 
         <!-- Step 3: Run Script -->
         <article class="section" data-step="3" id="step-3">
-            <div class="container">
+            <div class="container scrollable">
                 <header class="step-header">
                     <span class="step-number" aria-label="Step 3">03</span>
                     <h2>Execute the Installation Script</h2>
@@ -189,7 +189,7 @@
                     <div class="security-section" role="region" aria-labelledby="security-title">
                         <h4 id="security-title">🔐 Security Verification (Recommended)</h4>
                         <p>Verify the script's SHA512 hash before running:</p>
-                        <div class="code-block" role="region" aria-label="Hash verification command">
+                        <div class="code-block scrollable" role="region" aria-label="Hash verification command">
                             <code>curl -fsSL ifg.sh | sha512sum</code>
                         </div>
                         <div class="hash-display" role="region" aria-label="Expected SHA512 hash">
@@ -201,7 +201,7 @@
                     </div>
 
                     <p>Run the automated installation script:</p>
-                    <div class="code-block" role="region" aria-label="Installation command">
+                    <div class="code-block scrollable" role="region" aria-label="Installation command">
                         <code>bash &lt;(curl -fsSL ifg.sh)</code>
                     </div>
                     <aside class="note" role="note" aria-label="Important information">
@@ -217,7 +217,7 @@
 
         <!-- Step 4: Configure -->
         <article class="section" data-step="4" id="step-4">
-            <div class="container">
+            <div class="container scrollable">
                 <header class="step-header">
                     <span class="step-number" aria-label="Step 4">04</span>
                     <h2>Answer Configuration Questions</h2>
@@ -241,7 +241,7 @@
 
         <!-- Step 5: Complete -->
         <article class="section final-section" data-step="5" id="step-5">
-            <div class="container">
+            <div class="container scrollable">
                 <header class="step-header">
                     <span class="step-number" aria-label="Step 5">05</span>
                     <h2>Enjoy Your New Desktop</h2>
