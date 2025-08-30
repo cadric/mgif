@@ -2020,3 +2020,46 @@ button.copy.copy-fail {
   }
 }
 
+/* ============================================================================
+   PRELAUNCH WARNING OVERLAY (TEMPORARY)
+   ----------------------------------------------------------------------------
+   A glaring, static, red box centered on the page to indicate the site is not
+   ready for use. Remove the HTML block with class .prelaunch-warning to disable.
+   ============================================================================ */
+.prelaunch-warning {
+  position: fixed;
+  inset-inline-start: 50%;
+  inset-block-start: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1100; /* Above progress bar, video overlays, and tooltips */
+
+  /* Visuals */
+  background: #ef4444; /* Tailwind Red-500 for strong contrast */
+  color: #ffffff;
+  border: 3px solid #dc2626; /* Red-600 border */
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.45), 0 0 0 2px rgba(255,255,255,0.08);
+
+  /* Sizing and spacing */
+  padding: clamp(var(--space-lg), 2vw, var(--space-2xl)) clamp(var(--space-xl), 3vw, var(--space-3xl));
+  min-inline-size: 280px;
+  max-inline-size: min(90vw, 900px);
+  text-align: center;
+
+  /* Typography */
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: clamp(var(--font-size-lg), 1.5vw + 0.9rem, var(--font-size-3xl));
+  line-height: var(--line-height-tight);
+
+  /* Behavior */
+  pointer-events: none; /* Do not block page interactions */
+  user-select: none;
+}
+
+/* Hide warning when printing */
+@media print {
+  .prelaunch-warning { display: none !important; }
+}
+
