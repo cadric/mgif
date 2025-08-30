@@ -47,7 +47,8 @@ Allow: /
 Disallow: /index.sh
 Crawl-delay: 1
 
-# Block AI training bots (optional - respects robots.txt)
+# Block AI training bots (completely blocks crawling - voluntary compliance)
+# Note: This prevents crawling entirely, not just training usage
 User-agent: GPTBot
 Disallow: /
 
@@ -61,4 +62,13 @@ User-agent: anthropic-ai
 Disallow: /
 
 User-agent: Claude-Web
+Disallow: /
+
+User-agent: PerplexityBot
+Disallow: /
+
+User-agent: YouBot
+Disallow: /
+
+User-agent: Meta-ExternalAgent
 Disallow: /
