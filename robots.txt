@@ -1,0 +1,64 @@
+# Robots.txt for Install Fedora GNOME (ifg.sh)
+# A minimal, elegant Fedora GNOME installation script with interactive setup
+
+# Allow all search engines to crawl the main site
+User-agent: *
+Allow: /
+
+# Block crawling of installation script endpoint
+Disallow: /index.sh
+
+# Block crawling of error pages
+Disallow: /404.html
+
+# Block crawling of development/testing files if they exist
+Disallow: /test/
+Disallow: /dev/
+Disallow: /.well-known/
+Disallow: /tmp/
+
+# Allow crawling of assets for proper indexing
+Allow: /assets/css/
+Allow: /assets/js/
+Allow: /assets/icons/
+Allow: /assets/og/
+Allow: /assets/video/
+Allow: /assets/img/
+
+# Crawl delay to be respectful to server resources
+Crawl-delay: 1
+
+# Sitemap location
+Sitemap: https://ifg.sh/sitemap.xml
+
+# Special instructions for major search engines
+User-agent: Googlebot
+Allow: /
+Disallow: /index.sh
+Crawl-delay: 1
+
+User-agent: Bingbot
+Allow: /
+Disallow: /index.sh
+Crawl-delay: 1
+
+User-agent: Slurp
+Allow: /
+Disallow: /index.sh
+Crawl-delay: 1
+
+# Block AI training bots (optional - respects robots.txt)
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ChatGPT-User
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: Claude-Web
+Disallow: /
