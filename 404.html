@@ -33,6 +33,7 @@
     <style>
 /* Fallback CSS custom properties for standalone 404 page */
 :root {
+  color-scheme: dark;
   --color-bg-primary: #0a0a0a;
   --color-text-primary: #e5e5e5;
   --color-text-secondary: #d1d5db;
@@ -60,7 +61,7 @@
 }
 
 body {
-  min-height: 100svh;
+  min-block-size: 100svh;
   padding-block: 1rem;
   display: grid;
   place-items: center;
@@ -82,7 +83,7 @@ body {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  min-height: 80vh;
+  min-block-size: 80vh;
   width: 100%;
   animation: fadeInUp 1s ease 0.2s both;
 }
@@ -133,18 +134,17 @@ body {
   border: 0;
 }
 
-/* Error message styling - now outside wrapper */
+/* Error message styling - consolidated for consistency */
 .error-message {
   text-align: center;
   font-size: clamp(1rem, 2.5vw + 0.05rem, 1.4rem);
-  color: var(--color-text-secondary);
   text-transform: capitalize;
   text-wrap: balance;
   line-height: var(--line-height-relaxed);
-  margin-top: var(--space-lg);
-  max-width: 600px;
-  /* Ensure good contrast ratio (4.5:1) */
-  color: var(--color-text-primary);
+  margin-block-start: var(--space-lg);
+  max-inline-size: 600px;
+  /* Ensure minimum 4.5:1 contrast ratio against dark background */
+  color: var(--color-text-primary); /* #e5e5e5 provides ~13:1 contrast against #0a0a0a */
 }
 
 /* items */
@@ -187,7 +187,7 @@ body {
 
 .home-link-container {
   text-align: center;
-  margin-top: var(--space-2xl);
+  margin-block-start: var(--space-2xl);
 }
 
 /* Style the return home button to match site design */
@@ -210,8 +210,7 @@ body {
   font-family: inherit;
 }
 
-.home-button:hover,
-.home-button:focus-visible {
+.home-button:is(:hover, :focus-visible) {
   transform: translateY(-2px);
   box-shadow: var(--shadow-glow);
   color: var(--color-text-accent);
@@ -251,12 +250,6 @@ body {
   }
 }
 
-/* Ensure high contrast for accessibility */
-.error-message {
-  /* Ensure minimum 4.5:1 contrast ratio against dark background */
-  color: var(--color-text-primary); /* #e5e5e5 provides ~13:1 contrast against #0a0a0a */
-}
-
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .wrapper {
@@ -269,7 +262,7 @@ body {
   
   .error-message {
     font-size: clamp(0.9rem, 4vw, 1.2rem);
-    padding: 0 var(--space-md);
+    padding-inline: var(--space-md);
   }
   
   .home-button {
@@ -278,7 +271,7 @@ body {
   }
 }
 
-/* Accessibility improvements */
+/* Accessibility improvements - consolidated media queries */
 @media (prefers-reduced-motion: reduce) {
   .wrapper > span {
     animation: none;
@@ -286,10 +279,10 @@ body {
   
   .home-button {
     transition: none;
-  }
-  
-  .home-button::before {
-    display: none;
+    
+    &::before {
+      display: none;
+    }
   }
 }
 

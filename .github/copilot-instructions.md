@@ -245,4 +245,106 @@ main "$@"
 
 ## Security Considerations
 
-- Sanitize user input, parameterize DB queries, apply CSP headers, CSRF protection, secure cookies (`SameSite=Strict`, `HttpOnly`, `Secure`), minimal privileges, detailed internal logging
+Your production responses include these headers via Caddy:
+
+* HSTS, Referrer-Policy, Permissions-Policy, COOP, CORP, X-Content-Type-Options, X-Frame-Options, and a strict **CSP** applied to all routes except `/index.sh`. ([MDN Web Docs][1])
+* Headers are set with Caddy's `header` directive and matchers. ([Caddy Web Server][2])
+
+### CSP rules Copilot must obey
+
+Assume this effective policy on pages:
+`default-src 'self'; script-src 'self' 'sha256-…'` plus the other headers shown.
+
+1. **Scripts**
+
+   * Only load scripts from same origin. No CDNs. No inline event handlers. No `eval`, `Function`, or string timers. WebAssembly that requires `unsafe-eval` is disallowed. ([MDN Web Docs][3])
+   * If an inline `<script>` is unavoidable, it must be allowed by an exact **Base64-encoded** SHA-256/384/512 hash in `script-src` (single-quoted). Ensure the hash matches the final minified bytes. Prefer external files instead. ([MDN Web Docs][4], [content-security-policy.com][5])
+   * Use ES modules from same origin: `<script type="module" src="/app.js"></script>`. No dynamic import from foreign origins.
+
+2. **Styles**
+
+   * Only same-origin stylesheets. No inline styles unless allowed by a valid `style-src 'sha256-…'` or nonces (not currently configured). Avoid libraries that inject inline styles. ([MDN Web Docs][6])
+
+3. **Images, fonts, media**
+
+   * Load from same origin only. Do **not** use `data:` or `blob:` URLs unless the policy is explicitly extended. Keep build steps that embed data URIs disabled by default. ([MDN Web Docs][4])
+
+4. **Fetch and third-party calls**
+
+   * `fetch`/XHR/WebSocket endpoints must be same-origin unless `connect-src` gets extended. Write code to tolerate blocked third-party calls rather than assume they will work under CSP. ([MDN Web Docs][4])
+
+5. **Embedding and windows**
+
+   * Pages cannot be framed: `X-Frame-Options: DENY`. Prefer also setting `frame-ancestors 'none'` when editing CSP. Don't propose widgets that require embedding your pages elsewhere. ([MDN Web Docs][7])
+
+6. **Cross-origin isolation**
+
+   * COOP and CORP are enabled. Do **not** rely on `crossOriginIsolated` features like `SharedArrayBuffer` unless **COEP: require-corp** is also set. Suggest COEP only when such APIs are needed. ([MDN Web Docs][8])
+
+7. **MIME correctness**
+
+   * With `X-Content-Type-Options: nosniff`, scripts must be served with a valid JavaScript MIME type and CSS with `text/css`. Set correct `Content-Type` everywhere. ([MDN Web Docs][9])
+
+8. **CLI path**
+
+   * `/index.sh` returns `text/x-sh` and is cache-busted. Treat it as a CLI entry, not a browser script. Do not reference it from HTML. (Header behavior per Caddy `@script` matcher.) ([Caddy Web Server][2])
+
+### Coding patterns to use
+
+* **No inline** JS or CSS. Put code in versioned files under `/assets/...` and reference with absolute paths.
+* **No third-party embeds** (analytics, fonts, iframes, maps) unless we explicitly relax CSP and document the exact header changes.
+* **Graceful degradation** when a blocked feature is optional. Detect and disable rather than crash.
+* **SRI** is unnecessary for same-origin, but if CSP is later extended for allowed CDNs, require `integrity` and a fixed URL. ([MDN Web Docs][10])
+
+### Proposing CSP changes (only when truly needed)
+
+When suggesting a feature that conflicts with current CSP, include the minimal, explicit change in Caddy syntax, scoped to `@page`, and note the impact. Examples:
+
+* Allow hashed inline script block:
+
+  ```caddy
+  header @page {
+    Content-Security-Policy "default-src 'self'; script-src 'self' 'sha256-<BASE64_HASH>'"
+  }
+  ```
+
+  Hash must be Base64 of the exact inline block. ([MDN Web Docs][4])
+
+* Permit images from data URIs:
+
+  ```caddy
+  header @page {
+    Content-Security-Policy "default-src 'self'; script-src 'self'; img-src 'self' data:"
+  }
+  ```
+
+  Explain why it is required and test impact. ([MDN Web Docs][4])
+
+* Add `frame-ancestors` defense-in-depth:
+
+  ```caddy
+  header @page {
+    Content-Security-Policy "default-src 'self'; script-src 'self'; frame-ancestors 'none'"
+  }
+  ```
+
+  Keep `X-Frame-Options: DENY` for legacy. ([MDN Web Docs][7])
+
+* Enable cross-origin isolation when needed:
+
+  ```caddy
+  header @page {
+    Cross-Origin-Embedder-Policy "require-corp"
+  }
+  ```
+
+  Only when code uses features that require it. ([MDN Web Docs][11])
+
+### Testing and CI
+
+* Add automated checks for CSP violations in E2E tests. Fail builds on console CSP errors.
+* Use MDN docs as the normative reference for header semantics and directive details. ([MDN Web Docs][4])
+
+### Legacy Security Practices
+
+- Sanitize user input, parameterize DB queries, CSRF protection, secure cookies (`SameSite=Strict`, `HttpOnly`, `Secure`), minimal privileges, detailed internal logging
