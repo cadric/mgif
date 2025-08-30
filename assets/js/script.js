@@ -1025,7 +1025,7 @@ class FedoraInstallerUI {
         description.textContent = 'Experience the smooth, automated Fedora GNOME installation process.';
         
         const link = document.createElement('a');
-        link.href = 'https://ifg.sh/assets/video/showcase-v1.mp4';
+        link.href = 'https://ifg.sh/assets/video/showcase-v1-h265.mp4';
         link.target = '_blank';
         link.rel = 'noopener noreferrer';
         link.className = 'fallback-link';
