@@ -95,12 +95,17 @@
   --animation-duration-slow: 0.8s;
   --animation-duration-entrance: 1s;
   
+  /* Interaction Timing */
+  --timing-transition: 0.3s;
+  --timing-quick: 0.1s;
+  --timing-highlight: 1s;
+  --timing-copy-feedback: 1.5s;
+  --timing-toast-duration: 5s;
+  --timing-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  
   /* Z-Index Scale */
-  --z-index-dropdown: 1000;
   --z-index-sticky: 1020;
   --z-index-fixed: 1030;
-  --z-index-modal: 1050;
-  --z-index-popover: 1060;
   --z-index-tooltip: 1070;
   
   /* Breakpoints */
@@ -323,8 +328,6 @@ body {
   display: flex;
   align-items: center;
   gap: var(--space-md);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   min-height: 60px;
 }
 
@@ -598,7 +601,6 @@ body {
   border-radius: var(--radius-full);
   background-color: color-mix(in srgb, var(--color-brand-primary) 10%, transparent);
   border: 1px solid var(--color-border-accent);
-  backdrop-filter: blur(10px);
   /* Improve touch targets */
   min-inline-size: 44px;
   min-block-size: 44px;
@@ -657,7 +659,6 @@ body {
   border-radius: var(--radius-full);
   background-color: color-mix(in srgb, var(--color-brand-primary) 8%, transparent);
   border: 1px solid color-mix(in srgb, var(--color-brand-primary) 15%, transparent);
-  backdrop-filter: blur(5px);
   min-inline-size: 40px;
   min-block-size: 40px;
   display: flex;
@@ -775,21 +776,22 @@ body {
   overflow: hidden; /* section container itself should not scroll */
 }
 
-/* Custom scrollbar for container */
-.section .container::-webkit-scrollbar {
+/* Custom scrollbar for container and scrollable elements */
+:is(.section .container, .scrollable)::-webkit-scrollbar {
   width: 8px;
+  block-size: 8px;
 }
 
-.section .container::-webkit-scrollbar-track {
+:is(.section .container, .scrollable)::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.section .container::-webkit-scrollbar-thumb {
+:is(.section .container, .scrollable)::-webkit-scrollbar-thumb {
   background-color: var(--color-border-accent);
   border-radius: var(--radius-sm);
 }
 
-.section .container::-webkit-scrollbar-thumb:hover {
+:is(.section .container, .scrollable)::-webkit-scrollbar-thumb:hover {
   background-color: var(--color-brand-primary);
 }
 
@@ -919,6 +921,9 @@ body {
     rgba(139, 92, 246, 0.05)
   );
   padding: 2px;
+  /* Chrome-specific sizing fixes */
+  width: 100%;
+  max-width: 900px;
   /* Subtle glow animation */
   animation: video-glow 4s ease-in-out infinite alternate;
 }
@@ -936,6 +941,8 @@ body {
   transition: opacity 0.6s var(--timing-ease-out);
   /* Remove transform from will-change to prevent zoom */
   will-change: opacity;
+  /* Chrome-specific fixes for video sizing */
+  min-height: 300px; /* Ensure minimum height in Chrome */
 }
 
 /* Video loaded state */
@@ -954,7 +961,6 @@ body {
   align-items: center;
   gap: var(--space-sm);
   background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(8px);
   border-radius: var(--radius-full);
   padding: var(--space-sm) var(--space-md);
   opacity: 0;
@@ -1008,8 +1014,6 @@ body {
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
   transition: opacity var(--transition-base);
   z-index: 15;
   border-radius: calc(var(--radius-lg) - 2px);
@@ -1033,8 +1037,6 @@ body {
   color: var(--color-text-primary);
   cursor: pointer;
   transition: all 0.3s var(--timing-ease-out);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   min-width: 250px;
   text-align: center;
   box-shadow: 
@@ -1094,39 +1096,6 @@ body {
       0 0 25px rgba(59, 130, 246, 0.2),
       0 0 50px rgba(59, 130, 246, 0.1),
       inset 0 0 0 1px rgba(59, 130, 246, 0.25);
-  }
-}
-
-/* Responsive video sizing */
-@media (max-width: 768px) {
-  .video-showcase {
-    margin-block: var(--space-xl);
-    border-radius: var(--radius-md);
-    max-inline-size: 100%;
-  }
-  
-  .showcase-video {
-    border-radius: calc(var(--radius-md) - 2px);
-  }
-  
-  .video-controls {
-    bottom: 12px;
-    padding: var(--space-xs) var(--space-sm);
-  }
-  
-  /* Responsive play overlay */
-  .video-play-overlay-btn {
-    min-width: 200px;
-    padding: var(--space-xl) var(--space-md);
-  }
-  
-  .play-overlay-icon {
-    width: 3rem;
-    height: 3rem;
-  }
-  
-  .play-overlay-text {
-    font-size: var(--font-size-lg);
   }
 }
 
@@ -1379,13 +1348,6 @@ body {
   box-shadow: var(--shadow-md);
 }
 
-.feature h3 {
-  font-size: var(--font-size-xl);
-  margin-block-end: var(--space-sm);
-  color: var(--color-text-accent);
-  font-weight: var(--font-weight-semibold);
-}
-
 .feature p {
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
@@ -1483,7 +1445,7 @@ main:has(#step-5.visible) + .footer {
   }
 }
 
-@media (max-width: 47.9375rem) { /* 767px */
+@media (max-width: 768px) {
   :root {
     /* Adjust spacing for mobile */
     --space-lg: 1rem;
@@ -1589,6 +1551,37 @@ main:has(#step-5.visible) + .footer {
   .copy-icon {
     width: 0.875rem;
     height: 0.875rem;
+  }
+  
+  /* Responsive video sizing */
+  .video-showcase {
+    margin-block: var(--space-xl);
+    border-radius: var(--radius-md);
+    max-inline-size: 100%;
+  }
+  
+  .showcase-video {
+    border-radius: calc(var(--radius-md) - 2px);
+  }
+  
+  .video-controls {
+    bottom: 12px;
+    padding: var(--space-xs) var(--space-sm);
+  }
+  
+  /* Responsive play overlay */
+  .video-play-overlay-btn {
+    min-width: 200px;
+    padding: var(--space-xl) var(--space-md);
+  }
+  
+  .play-overlay-icon {
+    width: 3rem;
+    height: 3rem;
+  }
+  
+  .play-overlay-text {
+    font-size: var(--font-size-lg);
   }
 }
 
@@ -1712,22 +1705,10 @@ main:has(#step-5.visible) + .footer {
    ============================================================================ */
 
 /* Safari-specific optimizations */
-@supports (-webkit-appearance: none) {
-  .scroll-indicator,
-  .step-scroll-indicator {
-    /* Better backdrop filter support */
-    -webkit-backdrop-filter: blur(10px);
-    backdrop-filter: blur(10px);
-  }
-}
 
 /* Firefox-specific optimizations */
+
 /* Edge/Chromium-specific optimizations */
-@supports (backdrop-filter: blur(10px)) {
-  .progress-container {
-    backdrop-filter: blur(10px);
-  }
-}
 
 /* ============================================================================
    PERFORMANCE OPTIMIZATIONS
@@ -1869,7 +1850,6 @@ button.copy.copy-fail {
   align-items: center;
   gap: var(--space-sm);
   transition: var(--transition-colors), var(--transition-transform);
-  backdrop-filter: blur(8px);
   z-index: 10;
 }
 
@@ -1925,23 +1905,8 @@ button.copy.copy-fail {
    UTILITY CLASSES
    ============================================================================ */
 
-/* Responsive utilities */
-.text-balance {
-  text-wrap: balance;
-}
-
-.text-pretty {
-  text-wrap: pretty;
-}
-
-/* Spacing utilities */
-.mt-auto { margin-block-start: auto; }
-.mb-auto { margin-block-end: auto; }
-.mx-auto { margin-inline: auto; }
-
 /* Visibility utilities */
 .hidden { display: none; }
-.invisible { visibility: hidden; }
 
 /* Scrollbar utility */
 .scrollable {
@@ -1949,22 +1914,7 @@ button.copy.copy-fail {
   scrollbar-color: var(--color-border-accent) transparent;
 }
 
-.scrollable::-webkit-scrollbar {
-  block-size: 8px;
-}
-
-.scrollable::-webkit-scrollbar-track {
-  background-color: transparent;
-}
-
-.scrollable::-webkit-scrollbar-thumb {
-  background-color: var(--color-border-accent);
-  border-radius: 4px;
-}
-
-.scrollable::-webkit-scrollbar-thumb:hover {
-  background-color: var(--color-text-secondary);
-}
+/* Scrollbar styles already consolidated above */
 
 /* ============================================================================
    DARK MODE SPECIFIC STYLES
@@ -1980,6 +1930,52 @@ button.copy.copy-fail {
   /* Ensure proper contrast in dark mode */
   .code-block {
     background-color: color-mix(in srgb, var(--color-bg-tertiary) 80%, black);
+  }
+}
+
+/* Chrome-specific fixes for video sizing issues */
+@supports not (aspect-ratio: 16 / 9) {
+  .showcase-video {
+    height: 0;
+    padding-bottom: 56.25%; /* 16:9 aspect ratio fallback */
+    position: relative;
+  }
+}
+
+/* Backdrop filter utility classes */
+.backdrop-blur-4 { 
+  backdrop-filter: blur(4px); 
+  -webkit-backdrop-filter: blur(4px); 
+}
+
+.backdrop-blur-5 { 
+  backdrop-filter: blur(5px); 
+  -webkit-backdrop-filter: blur(5px); 
+}
+
+.backdrop-blur-8 { 
+  backdrop-filter: blur(8px); 
+  -webkit-backdrop-filter: blur(8px); 
+}
+
+.backdrop-blur-10 { 
+  backdrop-filter: blur(10px); 
+  -webkit-backdrop-filter: blur(10px); 
+}
+
+.backdrop-blur-12 { 
+  backdrop-filter: blur(12px); 
+  -webkit-backdrop-filter: blur(12px); 
+}
+
+/* Backdrop filter support fallback */
+@supports not (backdrop-filter: blur(10px)) {
+  .backdrop-blur-4,
+  .backdrop-blur-5,
+  .backdrop-blur-8,
+  .backdrop-blur-10,
+  .backdrop-blur-12 {
+    background-color: rgba(0, 0, 0, 0.5);
   }
 }
 

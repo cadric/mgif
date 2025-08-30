@@ -51,7 +51,7 @@
     <a href="#main-content" class="skip-link sr-only">Skip to main content</a>
 
     <!-- Progress indicator at top -->
-    <header class="progress-container" role="banner" aria-label="Installation progress">
+    <header class="progress-container backdrop-blur-10" role="banner" aria-label="Installation progress">
         <progress id="progress" class="progress" value="0" max="100" aria-label="Installation progress"></progress>
         <nav class="collected-steps" aria-label="Completed steps navigation" role="navigation">
             <!-- Steps will be collected here as user scrolls -->
@@ -68,10 +68,6 @@
             <div class="hero-content">
                 <h1 id="hero-title" class="title">Install Fedora GNOME</h1>
                 <p class="subtitle">A minimal, elegant installation script</p>
-                <button class="scroll-indicator" id="hero-scroll-target" aria-label="Scroll down to start installation guide" type="button">
-                    <div class="scroll-arrow" aria-hidden="true"></div>
-                    <span class="sr-only">Continue to installation guide</span>
-                </button>
             </div>
         </section>
 
@@ -100,8 +96,8 @@
                     </video>
                     
                     <!-- Large play overlay -->
-                    <div class="video-play-overlay" id="video-play-overlay">
-                        <button class="video-play-overlay-btn" aria-label="Play installation demo video" type="button">
+                    <div class="video-play-overlay backdrop-blur-4" id="video-play-overlay">
+                        <button class="video-play-overlay-btn backdrop-blur-12" aria-label="Play installation demo video" type="button">
                             <svg class="play-overlay-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                                 <path d="M8 5v14l11-7z"/>
                             </svg>
@@ -110,7 +106,7 @@
                     </div>
                     
                     <!-- Video controls -->
-                    <div class="video-controls" role="group" aria-label="Video controls">
+                    <div class="video-controls backdrop-blur-8" role="group" aria-label="Video controls">
                         <button class="video-control-btn" id="play-pause-btn" aria-label="Play/Pause video" type="button">
                             <svg class="play-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                                 <path d="M8 5v14l11-7z"/>
@@ -122,10 +118,6 @@
                     </div>
                 </div>
             </div>
-            <button class="scroll-indicator step-scroll-indicator" aria-label="Continue to step 1" type="button">
-                <div class="scroll-arrow" aria-hidden="true"></div>
-                <span class="sr-only">Next: Download Fedora</span>
-            </button>
         </article>
 
         <!-- Step 1: Download -->
@@ -149,10 +141,6 @@
                     </ul>
                 </div>
             </div>
-            <button class="scroll-indicator step-scroll-indicator" aria-label="Continue to step 2" type="button">
-                <div class="scroll-arrow" aria-hidden="true"></div>
-                <span class="sr-only">Next: Login as Root</span>
-            </button>
         </article>
 
         <!-- Step 2: Login -->
@@ -169,10 +157,6 @@
                     </div>
                 </div>
             </div>
-            <button class="scroll-indicator step-scroll-indicator" aria-label="Continue to step 3" type="button">
-                <div class="scroll-arrow" aria-hidden="true"></div>
-                <span class="sr-only">Next: Run Script</span>
-            </button>
         </article>
 
         <!-- Step 3: Run Script -->
@@ -209,10 +193,6 @@
                     </aside>
                 </div>
             </div>
-            <button class="scroll-indicator step-scroll-indicator" aria-label="Continue to step 4" type="button">
-                <div class="scroll-arrow" aria-hidden="true"></div>
-                <span class="sr-only">Next: Configure</span>
-            </button>
         </article>
 
         <!-- Step 4: Configure -->
@@ -233,10 +213,6 @@
                     </ul>
                 </div>
             </div>
-            <button class="scroll-indicator step-scroll-indicator" aria-label="Continue to step 5" type="button">
-                <div class="scroll-arrow" aria-hidden="true"></div>
-                <span class="sr-only">Next: Complete</span>
-            </button>
         </article>
 
         <!-- Step 5: Complete -->

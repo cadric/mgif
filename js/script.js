@@ -5,10 +5,58 @@
  */
 
 // Configuration and debugging
-const DEBUG = false;
+const DEBUG = new URLSearchParams(window.location.search).has('debug');
 const log = (...args) => DEBUG && console.log(...args);
 const warn = (...args) => DEBUG && console.warn(...args);
 const error = console.error.bind(console); // Always log errors
+
+// Debug mode indicator
+if (DEBUG) {
+    console.log('%c🐛 Debug Mode Enabled', 'background: #3b82f6; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;');
+    console.log('Add ?debug=1 to URL to enable debug logging');
+}
+
+// Global timing constants - read from CSS custom properties
+let GLOBAL_TIMINGS = null;
+
+/**
+ * Read CSS timing custom properties and convert to milliseconds
+ * @returns {Object} Timing constants in milliseconds
+ */
+function readCssTimings() {
+    try {
+        const styles = getComputedStyle(document.documentElement);
+        const toMs = v => {
+            if (!v) return 0;
+            return v.endsWith('ms') ? parseFloat(v) : parseFloat(v) * 1000;
+        };
+        return {
+            fast: toMs(styles.getPropertyValue('--animation-duration-fast').trim() || '0.3s'),
+            base: toMs(styles.getPropertyValue('--animation-duration-base').trim() || '0.5s'),
+            slow: toMs(styles.getPropertyValue('--animation-duration-slow').trim() || '0.8s'),
+            entrance: toMs(styles.getPropertyValue('--animation-duration-entrance').trim() || '1s'),
+            transition: toMs(styles.getPropertyValue('--timing-transition').trim() || '0.3s'),
+            quick: toMs(styles.getPropertyValue('--timing-quick').trim() || '0.1s'),
+            highlight: toMs(styles.getPropertyValue('--timing-highlight').trim() || '1s'),
+            copyFeedback: toMs(styles.getPropertyValue('--timing-copy-feedback').trim() || '1.5s'),
+            toastDuration: toMs(styles.getPropertyValue('--timing-toast-duration').trim() || '5s')
+        };
+    } catch (err) {
+        console.error('Failed to read CSS timings, using fallbacks:', err);
+        // Fallback timing values
+        return {
+            fast: 300,
+            base: 500,
+            slow: 800,
+            entrance: 1000,
+            transition: 300,
+            quick: 100,
+            highlight: 1000,
+            copyFeedback: 1500,
+            toastDuration: 5000
+        };
+    }
+}
 
 /**
  * Main application class for handling website interactions
@@ -35,6 +83,9 @@ class FedoraInstallerUI {
     // Accessibility and motion preferences
     #prefersReducedMotion = false;
     
+    // Centralized timing constants from CSS
+    #timings = null;
+    
     // Step titles mapping for collection
     #stepTitles = {
       'intro': 'Introduction',
@@ -50,13 +101,18 @@ class FedoraInstallerUI {
         // Detect user preferences
         this.#prefersReducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
         
+        // Initialize timing constants from CSS (shared with global timings)
+        this.#timings = readCssTimings();
+        
         this.#initializeElements();
+        this.#generateScrollIndicators();
         this.#setupPageTransitions();
         this.#initializeCursorArrow();
         this.#bindEvents();
         this.#initializeCopyButtons();
         this.#initialize();
         this.#setupHistoryAPI();
+        this.#wireUpDestroy();
     }
 
     /**
@@ -78,9 +134,9 @@ class FedoraInstallerUI {
                 section.classList.remove('visible', 'active');
             });
 
-        } catch (error) {
-            error('Failed to initialize DOM elements:', error);
-            throw error;
+        } catch (err) {
+            error('Failed to initialize DOM elements:', err);
+            throw err;
         }
     }
 
@@ -116,8 +172,8 @@ class FedoraInstallerUI {
                 
                 log('Copy button injected for code block');
             });
-        } catch (error) {
-            error('Failed to initialize copy buttons:', error);
+        } catch (err) {
+            error('Failed to initialize copy buttons:', err);
         }
     }
 
@@ -174,8 +230,8 @@ class FedoraInstallerUI {
                 }
             });
             
-        } catch (error) {
-            error('Failed to initialize cursor arrow:', error);
+        } catch (err) {
+            error('Failed to initialize cursor arrow:', err);
         }
     }
 
@@ -227,13 +283,12 @@ class FedoraInstallerUI {
             this.#setupTouchHandlers(section);
         });
 
-        // Mouse wheel navigation with scroll-aware detection
+        // Mouse wheel navigation with unified decision logic
         document.addEventListener('wheel', (e) => {
             if (this.#isTransitioning) return;
-            if (this.#isFromScrollableElement(e.target)) return;
             
-            // Check if we're in a scrollable section and handle accordingly
-            if (this.#shouldAllowSectionScroll(e)) {
+            // Use unified navigation decision logic
+            if (!this.#shouldNavigateByWheelOrSwipe(e.deltaY, e.target)) {
                 // Allow natural scrolling within the section
                 return;
             }
@@ -314,11 +369,8 @@ class FedoraInstallerUI {
             return; // Not a clear vertical swipe
         }
 
-        // Create a mock wheel event for scroll position checking
-        const mockWheelEvent = { deltaY: deltaY > 0 ? 1 : -1 };
-        
-        // Check if we should allow section scrolling (only for sections, not hero)
-        if (this.#currentSectionIndex !== -1 && this.#shouldAllowSectionScroll(mockWheelEvent)) {
+        // Use unified navigation decision logic
+        if (!this.#shouldNavigateByWheelOrSwipe(deltaY > 0 ? 1 : -1, e.target)) {
             return; // Let native scrolling handle it
         }
 
@@ -383,6 +435,23 @@ class FedoraInstallerUI {
             const isAtTop = scrollTop < 1;
             return !isAtTop;
         }
+    }
+
+    /**
+     * Unified decision logic for wheel/touch navigation vs. scrolling
+     * @param {number} deltaY - Scroll/swipe direction (positive = down)
+     * @param {Element} originEl - Element where the interaction originated
+     * @returns {boolean} - True if should navigate between sections, false if should scroll
+     */
+    #shouldNavigateByWheelOrSwipe(deltaY, originEl) {
+        // Always navigate if on hero section
+        if (this.#currentSectionIndex === -1) return true;
+        
+        // Never navigate if interaction came from scrollable element
+        if (this.#isFromScrollableElement(originEl)) return false;
+        
+        // Check if current section should allow internal scrolling
+        return !this.#shouldAllowSectionScroll({ deltaY });
     }
 
     /**
@@ -463,8 +532,8 @@ class FedoraInstallerUI {
             // Allow next transition after animation
             setTimeout(() => {
                 this.#isTransitioning = false;
-            }, 300);
-        }, 100);
+            }, this.#timings.transition);
+        }, this.#timings.quick);
     }
 
     /**
@@ -501,8 +570,8 @@ class FedoraInstallerUI {
             this.#currentSectionIndex = sectionIndex;
             this.#updateProgressBar();
             
-        } catch (error) {
-            error('Failed to render section immediately:', error);
+        } catch (err) {
+            error('Failed to render section immediately:', err);
         }
     }
 
@@ -520,8 +589,8 @@ class FedoraInstallerUI {
                     this.#renderSectionImmediate(sectionIndex);
                 }
             }
-        } catch (error) {
-            warn('Failed to setup history API:', error);
+        } catch (err) {
+            warn('Failed to setup history API:', err);
         }
     }
 
@@ -546,8 +615,8 @@ class FedoraInstallerUI {
             if (hash !== currentHash) {
                 history.replaceState(null, '', hash);
             }
-        } catch (error) {
-            warn('Failed to update history:', error);
+        } catch (err) {
+            warn('Failed to update history:', err);
         }
     }
 
@@ -562,8 +631,8 @@ class FedoraInstallerUI {
             if (sectionIndex !== null && sectionIndex !== this.#currentSectionIndex) {
                 this.#goToSection(sectionIndex);
             }
-        } catch (error) {
-            warn('Failed to handle history navigation:', error);
+        } catch (err) {
+            warn('Failed to handle history navigation:', err);
         }
     }
 
@@ -641,10 +710,10 @@ class FedoraInstallerUI {
             });
 
             // Highlight the new step
-            setTimeout(() => this.#highlightElement(stepElement), 100);
+            setTimeout(() => this.#highlightElement(stepElement), this.#timings.quick);
 
-        } catch (error) {
-            error('Failed to collect step:', error);
+        } catch (err) {
+            error('Failed to collect step:', err);
         }
     }
 
@@ -659,13 +728,13 @@ class FedoraInstallerUI {
             // Remove highlight after animation
             setTimeout(() => {
                 element.classList.remove('highlight');
-            }, 1000);
+            }, this.#timings.highlight);
             
             // Add hover effects
             this.#addHoverEffects(element);
             
-        } catch (error) {
-            console.error('Failed to highlight element:', error);
+        } catch (err) {
+            console.error('Failed to highlight element:', err);
         }
     }
 
@@ -677,8 +746,8 @@ class FedoraInstallerUI {
         try {
             // Use CSS classes instead of inline styles for hover effects
             element.classList.add('has-hover-effects');
-        } catch (error) {
-            error('Failed to add hover effects:', error);
+        } catch (err) {
+            error('Failed to add hover effects:', err);
         }
     }
 
@@ -720,8 +789,8 @@ class FedoraInstallerUI {
                     : 'Getting started';
                 progressEl.setAttribute('aria-valuetext', stepText);
             }
-        } catch (error) {
-            error('Failed to update progress bar:', error);
+        } catch (err) {
+            error('Failed to update progress bar:', err);
         }
     }
 
@@ -765,8 +834,8 @@ class FedoraInstallerUI {
             // Handle user interaction preferences
             this.#respectUserPreferences(video);
 
-        } catch (error) {
-            error('Failed to initialize showcase video:', error);
+        } catch (err) {
+            error('Failed to initialize showcase video:', err);
             this.#handleVideoError(video);
         }
     }
@@ -799,7 +868,7 @@ class FedoraInstallerUI {
                 overlayBtn.addEventListener('click', () => {
                     video.play().catch(error => {
                         console.log('Play failed:', error.name);
-                        showErrorToast('Failed to play video. Please try again.');
+                        this.#handleVideoPlayError(error);
                     });
                     // Hide overlay after clicking
                     playOverlay.classList.add('hidden');
@@ -884,7 +953,7 @@ class FedoraInstallerUI {
     #addVideoPlayButton(video) {
         // Create play button using createElement for CSP compliance
         const playButton = document.createElement('button');
-        playButton.className = 'video-play-button';
+        playButton.className = 'video-play-button backdrop-blur-8';
         playButton.setAttribute('aria-label', 'Play installation demo video');
         
         // Create SVG icon
@@ -909,7 +978,7 @@ class FedoraInstallerUI {
         playButton.addEventListener('click', () => {
             video.play().catch(error => {
                 error('Video play failed:', error);
-                showErrorToast('Failed to play video. Please try again.');
+                this.#handleVideoPlayError(error);
             });
             playButton.remove();
         });
@@ -956,7 +1025,7 @@ class FedoraInstallerUI {
         description.textContent = 'Experience the smooth, automated Fedora GNOME installation process.';
         
         const link = document.createElement('a');
-        link.href = 'https://ifg.sh/showcase.mp4';
+        link.href = 'https://ifg.sh/showcase-v1.mp4';
         link.target = '_blank';
         link.rel = 'noopener noreferrer';
         link.className = 'fallback-link';
@@ -975,6 +1044,15 @@ class FedoraInstallerUI {
         video.replaceWith(fallback);
     }
 
+    /**
+     * Handle video play errors consistently
+     * @param {Error} error - The play error
+     */
+    #handleVideoPlayError(error) {
+        warn('Video play failed:', error.name, error.message);
+        showErrorToast('Failed to play video. Please try again.');
+    }
+
 
 
     /**
@@ -983,7 +1061,22 @@ class FedoraInstallerUI {
     #initialize() {
         this.#updateProgressBar();
         this.#initializeShowcaseVideo();
+        
+        // Generate HowTo JSON-LD from DOM content (low priority enhancement)
+        if (DEBUG) {
+            this.#updateHowToJsonLD();
+        }
+        
         log('Fedora GNOME installer website loaded with page transitions!');
+    }
+
+    /**
+     * Read CSS timing custom properties and convert to milliseconds
+     * @returns {Object} Timing constants in milliseconds
+     */
+    #readCssTimings() {
+        // Use the shared global function
+        return readCssTimings();
     }
 
     /**
@@ -1130,7 +1223,7 @@ class FedoraInstallerUI {
     }
 
     /**
-     * Cleanup method for removing event listeners
+     * Cleanup method for removing event listeners and resources
      */
     destroy() {
         try {
@@ -1142,16 +1235,216 @@ class FedoraInstallerUI {
             if (toast) {
                 toast.remove();
             }
+
+            // Clear any pending timers
+            if (this.#cursorAnimationId) {
+                cancelAnimationFrame(this.#cursorAnimationId);
+                this.#cursorAnimationId = null;
+            }
+
+            // Clear references to DOM elements
+            this.#progressEl = null;
+            this.#collectedSteps = null;
+            this.#sections = null;
+            this.#hero = null;
+            this.#cursorCanvas = null;
+            this.#cursorCtx = null;
+            this.#cursorTarget = null;
             
             log('FedoraInstallerUI destroyed successfully');
-        } catch (error) {
-            error('Failed to cleanup FedoraInstallerUI:', error);
+        } catch (err) {
+            error('Failed to cleanup FedoraInstallerUI:', err);
         }
     }
+
+    /**
+     * Wire up the destroy method to lifecycle events
+     */
+    #wireUpDestroy() {
+        try {
+            // Clean up on page unload
+            window.addEventListener('beforeunload', () => {
+                this.destroy();
+            });
+
+            // Clean up on page visibility change (when tab is closed/hidden)
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) {
+                    // Page is hidden, do partial cleanup
+                    this.#stopCursorAnimation();
+                }
+            });
+
+            log('Destroy method wired up to lifecycle events');
+        } catch (err) {
+            error('Failed to wire up destroy method:', err);
+        }
+    }
+
+    /**
+     * Generate scroll indicators from template to eliminate duplication
+     */
+    #generateScrollIndicators() {
+        // Define scroll indicator data
+        const scrollIndicatorData = [
+            { container: '.hero-content', ariaLabel: 'Scroll down to start installation guide', nextText: 'Continue to installation guide', isHero: true },
+            { container: 'article[data-step="intro"]', ariaLabel: 'Continue to step 1', nextText: 'Next: Download Fedora' },
+            { container: 'article[data-step="1"]', ariaLabel: 'Continue to step 2', nextText: 'Next: Login as Root' },
+            { container: 'article[data-step="2"]', ariaLabel: 'Continue to step 3', nextText: 'Next: Execute Installation' },
+            { container: 'article[data-step="3"]', ariaLabel: 'Continue to step 4', nextText: 'Next: Configuration' },
+            { container: 'article[data-step="4"]', ariaLabel: 'Continue to step 5', nextText: 'Next: Complete Setup' }
+        ];
+
+        scrollIndicatorData.forEach((data, index) => {
+            const container = document.querySelector(data.container);
+            if (!container) return;
+
+            // Check if scroll indicator already exists (to avoid duplicating on re-init)
+            if (container.querySelector('.scroll-indicator')) return;
+
+            const scrollIndicator = this.#createScrollIndicator(data.ariaLabel, data.nextText, data.isHero);
+            container.appendChild(scrollIndicator);
+        });
+    }
+
+    /**
+     * Create a scroll indicator element from template
+     */
+    #createScrollIndicator(ariaLabel, nextText, isHero = false) {
+        const button = document.createElement('button');
+        button.className = isHero ? 'scroll-indicator backdrop-blur-10' : 'scroll-indicator step-scroll-indicator backdrop-blur-5';
+        button.setAttribute('aria-label', ariaLabel);
+        button.setAttribute('type', 'button');
+        
+        if (isHero) {
+            button.id = 'hero-scroll-target';
+        }
+
+        // Create scroll arrow
+        const scrollArrow = document.createElement('div');
+        scrollArrow.className = 'scroll-arrow';
+        scrollArrow.setAttribute('aria-hidden', 'true');
+
+        // Create screen reader text
+        const srText = document.createElement('span');
+        srText.className = 'sr-only';
+        srText.textContent = nextText;
+
+        button.appendChild(scrollArrow);
+        button.appendChild(srText);
+
+        return button;
+    }
+
+    /**
+     * Generate HowTo JSON-LD from DOM content to prevent drift
+     * @returns {Object} JSON-LD structured data object
+     */
+    #generateHowToJsonLD() {
+        try {
+            const baseUrl = window.location.origin + window.location.pathname;
+            const steps = [];
+
+            // Extract steps from DOM sections
+            this.#sections.forEach((section, index) => {
+                const stepId = section.getAttribute('data-step');
+                const stepHeader = section.querySelector('h2');
+                const stepContent = section.querySelector('.step-content p');
+                
+                if (stepId && stepHeader && stepContent) {
+                    // Skip intro section for numbering
+                    const position = stepId === 'intro' ? 0 : parseInt(stepId, 10);
+                    
+                    if (position > 0) { // Only include numbered steps
+                        steps.push({
+                            "@type": "HowToStep",
+                            "position": position,
+                            "name": stepHeader.textContent.trim(),
+                            "text": stepContent.textContent.trim(),
+                            "url": `${baseUrl}#step-${stepId}`
+                        });
+                    }
+                }
+            });
+
+            return {
+                "@context": "https://schema.org",
+                "@type": "HowTo",
+                "name": document.title,
+                "description": document.querySelector('meta[name="description"]')?.content || '',
+                "inLanguage": "en",
+                "url": baseUrl,
+                "mainEntityOfPage": baseUrl,
+                "totalTime": "PT30M",
+                "estimatedCost": {
+                    "@type": "MonetaryAmount",
+                    "currency": "USD",
+                    "value": "0"
+                },
+                "supply": [
+                    {
+                        "@type": "HowToSupply",
+                        "name": "Computer with internet connection"
+                    },
+                    {
+                        "@type": "HowToSupply",
+                        "name": "USB drive (4GB or larger)"
+                    },
+                    {
+                        "@type": "HowToSupply",
+                        "name": "Fedora Everything ISO",
+                        "url": "https://fedoraproject.org/everything/download"
+                    }
+                ],
+                "tool": [
+                    {
+                        "@type": "HowToTool",
+                        "name": "Fedora Media Writer",
+                        "url": "https://fedoraproject.org/workstation/download"
+                    },
+                    {
+                        "@type": "HowToTool",
+                        "name": "dd or similar imaging tool"
+                    }
+                ],
+                "step": steps
+            };
+        } catch (err) {
+            error('Failed to generate HowTo JSON-LD:', err);
+            return null;
+        }
+    }
+
+    /**
+     * Update the HowTo JSON-LD script with DOM-generated content
+     */
+    #updateHowToJsonLD() {
+        try {
+            const existingScript = document.getElementById('howto-schema');
+            if (!existingScript) {
+                warn('HowTo schema script not found, skipping update');
+                return;
+            }
+
+            const generatedSchema = this.#generateHowToJsonLD();
+            if (!generatedSchema) return;
+
+            // Update the script content
+            existingScript.textContent = JSON.stringify(generatedSchema, null, 4);
+            log('HowTo JSON-LD updated from DOM content');
+        } catch (err) {
+            error('Failed to update HowTo JSON-LD:', err);
+        }
+    }
+
+    // ...existing code...
 }
 
 // Initialize the application when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
+    // Initialize global timings first
+    GLOBAL_TIMINGS = readCssTimings();
+    
     try {
         // Feature detection for required APIs
         if (!('requestAnimationFrame' in window)) {
@@ -1167,8 +1460,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Progressive enhancement features
         initializeProgressiveEnhancements();
         
-    } catch (error) {
-        error('Failed to initialize Fedora Installer UI:', error);
+    } catch (err) {
+        error('Failed to initialize Fedora Installer UI:', err);
         
         // Show user-friendly error message using toast
         showErrorToast('Something went wrong loading the page. Please refresh and try again.');
@@ -1274,7 +1567,7 @@ function showCopyFeedback(button, success = true) {
         button.textContent = originalText;
         button.setAttribute('aria-label', originalAriaLabel);
         button.classList.remove('copy-ok', 'copy-fail');
-    }, 1500);
+    }, GLOBAL_TIMINGS?.copyFeedback || 1500);
 }
 
 /**
@@ -1305,8 +1598,8 @@ function fallbackCopyText(text, button) {
             warn('Document.execCommand copy failed');
         }
         
-    } catch (error) {
-        error('Fallback copy failed:', error);
+    } catch (err) {
+        error('Fallback copy failed:', err);
         showCopyFeedback(button, false);
     }
 }
@@ -1337,5 +1630,5 @@ function showErrorToast(message) {
     // Auto-hide after 5 seconds
     setTimeout(() => {
         toast.setAttribute('hidden', '');
-    }, 5000);
+    }, GLOBAL_TIMINGS?.toastDuration || 5000);
 }
