@@ -1,7 +1,14 @@
-# Code Review Report: Duplicates and Dead Code
+# Code Review R## HTML (`index.html`)
+
+- Duplicates: 
+  - ✅ **FIXED**: Removed duplicate video play button - video poster attribute was creating duplicate play interface with CSS overlay
+  - Scroll indicators are not hard-coded; they're created at runtime in `assets/js/script.js`.
+  - Static JSON-LD mirrors content for SEO; that duplication is intentional. JS can regenerate JSON-LD (currently gated by `DEBUG`).
+- Dead/Unused: None obvious.
+- Minor consistency note: Video source is `https://ifg.sh/showcase-v1.mp4` while JS fallback link points to `https://ifg.sh/showcase.mp4` (version mismatch).Duplicates and Dead Code
 
 Date: 2025-08-30
-Files Reviewed: `index.html`, `js/script.js`, `css/style.css`, `404.html`
+Files Reviewed: `index.html`, `assets/js/script.js`, `assets/css/style.css`, `404.html`
 
 Focus: Identify duplicated logic/mStatus: **Fully CSP compliant** ✅. All inline scripts are hashed and allowed, all inline styles have been moved to CSS file, and all data: URLs have been replaced with same-origin assets. The site now conforms to strict CSP without any violations.rkup and dead or unused code. Remove prior false claims.
 
@@ -19,9 +26,9 @@ Focus: Identify duplicated logic/mStatus: **Fully CSP compliant** ✅. All inlin
   - Scroll indicators are not hard-coded; they’re created at runtime in `js/script.js`.
   - Static JSON-LD mirrors content for SEO; that duplication is intentional. JS can regenerate JSON-LD (currently gated by `DEBUG`).
 - Dead/Unused: None obvious.
-- Minor consistency note: Video source is `https://ifg.sh/showcase-v1.mp4` while JS fallback link points to `https://ifg.sh/showcase.mp4` (version mismatch).
+- ✅ **FIXED**: Video URL consistency - Both video source and fallback link now use `https://ifg.sh/assets/video/showcase-v1.mp4`
 
-## JavaScript (`js/script.js`)
+## JavaScript (`assets/js/script.js`)
 
 - Duplications
   - ✅ **FIXED**: Timing constants were split between `GLOBAL_TIMINGS` and `#timings`. Now unified to use CSS custom properties as single source of truth.
@@ -38,7 +45,7 @@ Focus: Identify duplicated logic/mStatus: **Fully CSP compliant** ✅. All inlin
 - ✅ **FIXED**: Logger shadowing issue
   - All `catch (error)` blocks have been renamed to `catch (err)` to prevent shadowing the global `error` logger function.
 
-## CSS (`css/style.css`)
+## CSS (`assets/css/style.css`)
 
 - Duplications
   - Scrollbar styling is already consolidated via `:is(.section .container, .scrollable)` selectors. No duplication to remove.
@@ -61,7 +68,7 @@ Focus: Identify duplicated logic/mStatus: **Fully CSP compliant** ✅. All inlin
 - Purpose: Standalone not-found page with animated numeric columns and a return-home CTA. Includes inline CSS fallback while also linking the shared site stylesheet.
 
 - Duplications
-  - Inline CSS duplicates some design tokens present in `css/style.css` (colors, spacing, shadows, transitions). This is intentional as a fallback if `/css/style.css` fails to load on error routes; acceptable duplication.
+  - Inline CSS duplicates some design tokens present in `assets/css/style.css` (colors, spacing, shadows, transitions). This is intentional as a fallback if `/assets/css/style.css` fails to load on error routes; acceptable duplication.
   - ✅ **FIXED**: Multiple `.error-message` rules consolidated into a single declaration to reduce redundancy.
 
 - Dead/Unused
@@ -78,9 +85,24 @@ Focus: Identify duplicated logic/mStatus: **Fully CSP compliant** ✅. All inlin
 - Recommendations
   - ✅ **COMPLETED**: Merged duplicate `.error-message` declarations into one block.
   - ✅ **ENHANCED**: Added modern CSS features including logical properties (`margin-block-start`, `padding-inline`, `min-block-size`), `:is()` selector, CSS nesting, and `color-scheme` declaration.
-  - Optionally, import only the needed subset from `css/style.css` and keep a minimal inline fallback to reduce duplication, but this is not critical.
+  - Optionally, import only the needed subset from `assets/css/style.css` and keep a minimal inline fallback to reduce duplication, but this is not critical.
 
 ## File Organization Improvements
+
+### Assets Structure
+- ✅ **IMPROVED**: Moved `favicon.svg` from root directory to `assets/icons/favicon.svg` for better organization
+- ✅ **IMPROVED**: Video URLs updated to use organized path structure `https://ifg.sh/assets/video/showcase-v1.mp4`
+- ✅ **IMPROVED**: CSS and JS files moved to organized asset structure under `assets/css/` and `assets/js/`
+- Updated HTML references: 
+  - `<link rel="stylesheet" href="assets/css/style.css">`
+  - `<script src="assets/js/script.js">`
+  - 404.html: `<link rel="stylesheet" href="/assets/css/style.css">`
+- Assets now properly organized under:
+  - `assets/icons/` - Icons and favicons
+  - `assets/css/` - Stylesheets  
+  - `assets/js/` - JavaScript files
+  - `assets/video/` - Video files
+  - `assets/img/` - Images and graphics
 
 ### Assets Structure
 - ✅ **IMPROVED**: Moved `favicon.svg` from root directory to `assets/icons/favicon.svg` for better organization
@@ -107,7 +129,7 @@ Focus: Identify duplicated logic/mStatus: **Fully CSP compliant** ✅. All inlin
 
 ## Security Considerations compliance audit (CSP, headers)
 
-Scope: `index.html`, `css/style.css`, `js/script.js` vs. repo's Security Considerations and effective CSP:
+Scope: `index.html`, `assets/css/style.css`, `assets/js/script.js` vs. repo's Security Considerations and effective CSP:
 `default-src 'self'; script-src 'self' 'sha256-MTgyLDIyNiwxNzgsMTAyLDEyNywyNDcsMjAxLDIwNCw2...'` plus strict headers via Caddy.
 
 Summary
@@ -149,7 +171,7 @@ Findings
    - Assets under `css/` and `js/` instead of `/assets/...`; pattern recommendation only.
 
 Approved patterns confirmed
-- No third‑party embeds; no CDNs; same‑origin media (`https://ifg.sh/showcase-v1.mp4`); no blob: usage; no dynamic imports from foreign origins; no reliance on cross‑origin isolation APIs.
+- No third‑party embeds; no CDNs; same‑origin media (`https://ifg.sh/assets/video/showcase-v1.mp4`); no blob: usage; no dynamic imports from foreign origins; no reliance on cross‑origin isolation APIs.
 
 Remediations
 - ✅ Inline scripts: **All compliant** - both the `no-js` script and JSON-LD script are already hashed and allowed in CSP.
