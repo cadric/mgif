@@ -1,16 +1,16 @@
 /*!
- * Fedora GNOME Installer Website Styles
+ * Fedora GNOME Installer Website Styles - Optimized & Modernized
  * @author Cadric
- * @description Modern, accessible dark theme with smooth animations and responsive design
- * @version 1.0.0
+ * @description Ultra-modern, accessible dark theme with latest CSS features
+ * @version 2.0.0
  */
 
 /* ============================================================================
-   CSS CUSTOM PROPERTIES (VARIABLES)
+   CSS CUSTOM PROPERTIES (DESIGN TOKENS)
    ============================================================================ */
 
 :root {
-  /* Color Palette */
+  /* Color System */
   --color-bg-primary: #0a0a0a;
   --color-bg-secondary: #1a1a1a;
   --color-bg-tertiary: #111111;
@@ -19,7 +19,7 @@
   --color-text-muted: #9ca3af;
   --color-text-accent: #f9fafb;
   
-  /* Brand Colors */
+  /* Brand Palette */
   --color-brand-primary: #3b82f6;
   --color-brand-secondary: #06b6d4;
   --color-brand-tertiary: #8b5cf6;
@@ -30,121 +30,87 @@
   --color-interactive-primary: #60a5fa;
   --color-interactive-hover: #93c5fd;
   --color-border-subtle: #2a2a2a;
-  --color-border-accent: rgba(59, 130, 246, 0.2);
+  --color-border-accent: color-mix(in srgb, var(--color-brand-primary) 20%, transparent);
   
-  /* Spacing Scale */
-  --space-2xs: 0.125rem;  /* 2px */
-  --space-xs: 0.25rem;    /* 4px */
-  --space-sm: 0.5rem;     /* 8px */
-  --space-md: 1rem;       /* 16px */
-  --space-lg: 1.5rem;     /* 24px */
-  --space-xl: 2rem;       /* 32px */
-  --space-2xl: 3rem;      /* 48px */
-  --space-3xl: 4rem;      /* 64px */
-  --space-4xl: 5rem;      /* 80px */
+  /* Fluid Spacing Scale */
+  --space-2xs: 0.125rem;
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: clamp(1.5rem, 2vw, 2rem);
+  --space-xl: clamp(2rem, 3vw, 2.5rem);
+  --space-2xl: clamp(3rem, 4vw, 4rem);
+  --space-3xl: clamp(4rem, 5vw, 5rem);
+  --space-4xl: clamp(5rem, 6vw, 6rem);
   
-  /* Typography Scale */
-  --font-size-xs: 0.75rem;   /* 12px */
-  --font-size-sm: 0.875rem;  /* 14px */
-  --font-size-base: 1rem;    /* 16px */
-  --font-size-lg: 1.125rem;  /* 18px */
-  --font-size-xl: 1.25rem;   /* 20px */
-  --font-size-2xl: 1.5rem;   /* 24px */
-  --font-size-3xl: 1.875rem; /* 30px */
-  --font-size-4xl: 2.25rem;  /* 36px */
-  --font-size-5xl: 3rem;     /* 48px */
-  --font-size-6xl: 3.75rem;  /* 60px */
+  /* Fluid Typography Scale */
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: clamp(1.125rem, 1.5vw, 1.25rem);
+  --font-size-xl: clamp(1.25rem, 2vw, 1.5rem);
+  --font-size-2xl: clamp(1.5rem, 2.5vw, 1.875rem);
+  --font-size-3xl: clamp(1.875rem, 3vw, 2.25rem);
+  --font-size-4xl: clamp(2.25rem, 4vw, 3rem);
+  --font-size-5xl: clamp(3rem, 5vw, 3.75rem);
+  --font-size-6xl: clamp(3.75rem, 6vw, 4.5rem);
   
-  /* Font Weights */
+  /* Typography System */
   --font-weight-light: 300;
   --font-weight-normal: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
-  
-  /* Line Heights */
   --line-height-tight: 1.25;
   --line-height-base: 1.5;
   --line-height-relaxed: 1.625;
   
-  /* Border Radius */
-  --radius-sm: 0.375rem;   /* 6px */
-  --radius-base: 0.5rem;   /* 8px */
-  --radius-md: 0.75rem;    /* 12px */
-  --radius-lg: 1rem;       /* 16px */
-  --radius-xl: 1.25rem;    /* 20px */
+  /* Border Radius Scale */
+  --radius-sm: 0.375rem;
+  --radius-base: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
   --radius-full: 9999px;
   
-  /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-base: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-glow: 0 4px 20px rgba(59, 130, 246, 0.3);
+  /* Shadow System */
+  --shadow-sm: 0 1px 2px 0 color-mix(in srgb, black 5%, transparent);
+  --shadow-base: 0 1px 3px 0 color-mix(in srgb, black 10%, transparent);
+  --shadow-md: 0 4px 6px -1px color-mix(in srgb, black 10%, transparent);
+  --shadow-lg: 0 10px 15px -3px color-mix(in srgb, black 10%, transparent);
+  --shadow-glow: 0 4px 20px color-mix(in srgb, var(--color-brand-primary) 30%, transparent);
   
-  /* Transitions */
-  --transition-fast: 0.15s ease;
-  --transition-base: 0.3s ease;
-  --transition-slow: 0.5s ease;
-  --transition-transform: transform var(--transition-base);
-  --transition-colors: color var(--transition-base), background-color var(--transition-base), border-color var(--transition-base);
-  
-  /* Animation Durations */
+  /* Motion System */
+  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   --animation-duration-fast: 0.3s;
   --animation-duration-base: 0.5s;
-  --animation-duration-slow: 0.8s;
   --animation-duration-entrance: 1s;
   
-  /* Interaction Timing */
-  --timing-transition: 0.3s;
-  --timing-quick: 0.1s;
-  --timing-highlight: 1s;
-  --timing-copy-feedback: 1.5s;
-  --timing-toast-duration: 5s;
-  --timing-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  
-  /* Z-Index Scale */
+  /* Layout Constants */
   --z-index-sticky: 1020;
   --z-index-fixed: 1030;
   --z-index-tooltip: 1070;
-  
-  /* Breakpoints */
-  --breakpoint-sm: 640px;
-  --breakpoint-md: 768px;
-  --breakpoint-lg: 1024px;
-  --breakpoint-xl: 1280px;
-  --breakpoint-2xl: 1536px;
-  
-  /* Container Widths */
-  --container-sm: 640px;
-  --container-md: 768px;
-  --container-lg: 1024px;
-  --container-xl: 1280px;
-  --container-2xl: 1536px;
+  --container-max-width: min(1280px, calc(100vw - 2rem));
 }
 
-/* Dark Mode Support */
+/* Dark Mode & Accessibility */
 @media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-  }
+  :root { color-scheme: dark; }
 }
 
-/* Reduced Motion Support */
 @media (prefers-reduced-motion: reduce) {
   :root {
-    --animation-duration-fast: 0.01s;
-    --animation-duration-base: 0.01s;
-    --animation-duration-slow: 0.01s;
-    --animation-duration-entrance: 0.01s;
     --transition-fast: none;
     --transition-base: none;
     --transition-slow: none;
+    --animation-duration-fast: 0.01ms;
+    --animation-duration-base: 0.01ms;
+    --animation-duration-entrance: 0.01ms;
   }
   
-  *,
-  *::before,
-  *::after {
+  *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
@@ -153,150 +119,23 @@
 }
 
 /* ============================================================================
-   NO-JAVASCRIPT FALLBACK STYLES
+   MODERN CSS RESET
    ============================================================================ */
 
-/* Show content when JavaScript is disabled */
-.no-js .section {
-  position: static !important;
-  opacity: 1 !important;
-  visibility: visible !important;
-  transform: none !important;
-  min-height: auto !important;
-  padding: var(--space-2xl) 0 !important;
-  display: block !important;
-}
-
-.no-js .hero {
-  position: static !important;
-  opacity: 1 !important;
-  visibility: visible !important;
-  transform: none !important;
-  min-height: auto !important;
-  padding: var(--space-4xl) 0 !important;
-  display: flex !important;
-}
-
-/* Hide interactive elements that require JS */
-.no-js .scroll-indicator,
-.no-js .step-scroll-indicator,
-.no-js .video-controls,
-.no-js .video-play-overlay,
-.no-js .hero-cursor-overlay,
-.no-js .progress-container {
-  display: none !important;
-}
-
-/* Ensure proper spacing without fixed positioning */
-.no-js body {
-  padding-top: 0 !important;
-  overflow: visible !important;
-  height: auto !important;
-}
-
-/* Show all sections in normal flow */
-.no-js .section:not(.hero) {
-  border-top: 1px solid var(--color-border-subtle);
-}
-
-.no-js .hero {
-  border-bottom: 1px solid var(--color-border-subtle);
-}
-
-/* Noscript-specific styles for fallback content */
-.no-js noscript .section {
-  position: static;
-  opacity: 1;
-  visibility: visible;
-  transform: none;
-  padding: 2rem;
-  background: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  min-height: auto;
-}
-
-.no-js noscript ol {
-  list-style: decimal;
-  padding-left: 1.5rem;
-  margin: 1rem 0;
-  line-height: 1.6;
-}
-
-.no-js noscript li {
-  margin: 0.5rem 0;
-}
-
-.no-js noscript a {
-  color: var(--color-brand-primary);
-}
-
-.no-js noscript code {
-  background: var(--color-bg-tertiary);
-  padding: 0.2rem 0.4rem;
-  border-radius: 3px;
-}
-
-.no-js noscript .noscript-note {
-  margin-top: 2rem;
-  padding: 1rem;
-  background: color-mix(in srgb, var(--color-brand-primary) 10%, transparent);
-  border-radius: 0.5rem;
-  border: 1px solid color-mix(in srgb, var(--color-brand-primary) 20%, transparent);
-}
-
-/* ============================================================================
-   RESET AND BASE STYLES
-   ============================================================================ */
-
-/* ============================================================================
-   MODERN CSS RESET AND DOCUMENT SETUP
-   ============================================================================
-   
-   This CSS file implements modern web standards following best practices:
-   - CSS Custom Properties for maintainable design tokens
-   - Logical Properties for internationalization support
-   - Modern layout systems (Grid, Flexbox)
-   - Accessibility-first approach (WCAG 2.1 AA compliance)
-   - Progressive enhancement with graceful fallbacks
-   - Mobile-first responsive design
-   - Performance optimizations
-   
-   Browser Support: Latest stable releases of major browsers
-   - Firefox: Latest 2 releases or ESR
-   - Chrome: Latest 2 releases
-   - Edge: Latest 2 releases (Chromium-based)
-   - Safari: Latest stable + 1 previous release
-   ============================================================================ */
-
-/* CSS Reset using modern best practices */
-*,
-*::before,
-*::after {
+*, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-/* Remove default list styles */
-ul,
-ol {
-  list-style: none;
-}
+ul, ol { list-style: none; }
 
-/* Set root defaults */
 :root {
-  /* Improved text rendering */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeSpeed;
-  
-  /* Better scrolling on iOS */
   -webkit-overflow-scrolling: touch;
-  
-  /* Enable smooth scrolling with reduced motion support */
   scroll-behavior: smooth;
-  
-  /* Set default line height for better readability */
   line-height: 1.5;
 }
 
@@ -306,52 +145,96 @@ body {
   background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
   line-height: var(--line-height-relaxed);
-  overflow: hidden; /* Prevent scrolling for page transitions */
-  /* Improve text rendering */
+  overflow: hidden;
   text-rendering: optimizeSpeed;
-  /* Better scrolling on iOS */
   -webkit-overflow-scrolling: touch;
-  /* Full height for page transitions */
-  height: 100vh;
+  block-size: 100vh;
+  block-size: 100dvh;
   position: relative;
-  /* Add top padding to prevent fixed header from covering content */
-  padding-top: 70px;
+  padding-block-start: max(70px, 11vh);
 }
 
-/* Focus management for accessibility */
-:focus {
+:focus-visible {
   outline: 2px solid var(--color-brand-primary);
   outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }
 
-/* Skip links for accessibility */
-.skip-link {
-  position: absolute;
-  top: -40px;
-  left: 6px;
-  background: var(--color-brand-primary);
-  color: white;
-  padding: var(--space-sm) var(--space-md);
-  border-radius: var(--radius-base);
-  text-decoration: none;
-  z-index: var(--z-index-tooltip);
-  transition: var(--transition-transform);
-}
+/* ============================================================================
+   NO-JAVASCRIPT FALLBACKS
+   ============================================================================ */
 
-.skip-link:focus {
-  top: 6px;
-}
-
-/* Smooth scrolling fallback for Safari */
-@supports not (scroll-behavior: smooth) {
-  html {
-    scroll-behavior: auto;
+.no-js {
+  & .section {
+    position: static !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
+    min-block-size: auto !important;
+    padding-block: var(--space-2xl) !important;
+    display: block !important;
+    
+    &:not(.hero) {
+      border-block-start: 1px solid var(--color-border-subtle);
+    }
+  }
+  
+  & .hero {
+    position: static !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
+    min-block-size: auto !important;
+    padding-block: var(--space-4xl) !important;
+    display: flex !important;
+    border-block-end: 1px solid var(--color-border-subtle);
+  }
+  
+  & :is(.scroll-indicator, .step-scroll-indicator, .video-controls, 
+        .video-play-overlay, .hero-cursor-overlay, .progress-container) {
+    display: none !important;
+  }
+  
+  & body {
+    padding-block-start: 0 !important;
+    overflow: visible !important;
+    block-size: auto !important;
   }
 }
 
 /* ============================================================================
-   PROGRESS INDICATOR COMPONENT
+   SKIP LINKS & ACCESSIBILITY
    ============================================================================ */
+
+.skip-link {
+  position: absolute;
+  inset-block-start: -40px;
+  inset-inline-start: 6px;
+  background: var(--color-brand-primary);
+  color: white;
+  padding-block: var(--space-sm);
+  padding-inline: var(--space-md);
+  border-radius: var(--radius-base);
+  text-decoration: none;
+  z-index: var(--z-index-tooltip);
+  transition: var(--transition-fast);
+  
+  &:focus {
+    inset-block-start: 6px;
+  }
+}
+
+.sr-only {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 
 /* ============================================================================
    PROGRESS INDICATOR
@@ -359,78 +242,63 @@ body {
 
 .progress-container {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
+  inset-block-start: 0;
+  inset-inline: 0;
   z-index: var(--z-index-fixed);
   background-color: var(--color-bg-secondary);
-  border-bottom: 1px solid var(--color-border-subtle);
-  padding: var(--space-sm);
+  border-block-end: 1px solid var(--color-border-subtle);
+  padding-block: var(--space-sm);
+  padding-inline: var(--space-md);
   display: flex;
-  align-items: center;
-  gap: var(--space-md);
-  min-height: 60px;
+  flex-direction: column; /* Changed to column */
+  align-items: center; /* Center items horizontally */
+  gap: var(--space-sm); /* Adjusted gap */
+  min-block-size: 60px;
+  max-block-size: min(200px, 25vh);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
-/* Modern progress element styling */
 .progress {
-  flex: 1;
-  height: 0.5rem;
-  background-color: var(--color-bg-tertiary);
+  inline-size: 100%; /* Full width */
+  block-size: 10px; /* Thinner bar */
+  background-color: transparent; /* Make track transparent */
   border: none;
-  border-radius: var(--radius-full);
+  border-radius: 0; /* No radius for a full-width bar */
   overflow: hidden;
   appearance: none;
   -webkit-appearance: none;
+  position: absolute; /* Position at the top */
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  
+  &::-webkit-progress-bar {
+    background-color: transparent;
+  }
+  
+  &::-webkit-progress-value {
+    background: linear-gradient(90deg, var(--color-brand-primary), var(--color-brand-secondary));
+    border-radius: 0;
+    transition: inline-size var(--transition-base);
+  }
+  
+  &::-moz-progress-bar {
+    background: linear-gradient(90deg, var(--color-brand-primary), var(--color-brand-secondary));
+    border-radius: 0;
+    transition: inline-size var(--transition-base);
+  }
 }
 
-/* Progress bar fill styling */
-.progress::-webkit-progress-bar {
-  background-color: var(--color-bg-tertiary);
-  border-radius: var(--radius-full);
-}
-
-.progress::-webkit-progress-value {
-  background: linear-gradient(90deg, var(--color-brand-primary), var(--color-brand-secondary));
-  border-radius: var(--radius-full);
-  transition: width var(--transition-base);
-  position: relative;
-}
-
-/* Firefox progress styling */
-.progress::-moz-progress-bar {
-  background: linear-gradient(90deg, var(--color-brand-primary), var(--color-brand-secondary));
-  border-radius: var(--radius-full);
-  transition: width var(--transition-base);
-}
-
-/* Add shimmer effect to progress bar */
-.progress::-webkit-progress-value::after,
-.progress::-moz-progress-bar::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  animation: shimmer 2s infinite;
-}
-
-@keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
-
-/* Collected Steps Navigation */
 .collected-steps {
-  padding-block: var(--space-md);
+  padding-block-start: var(--space-md); /* Add padding to not overlap with progress bar */
   padding-inline: var(--space-lg);
   display: flex;
-  gap: var(--space-lg);
+  gap: var(--space-sm);
   flex-wrap: wrap;
   min-block-size: 60px;
   align-items: center;
+  flex: 1;
+  justify-content: center;
 }
 
 .collected-step {
@@ -445,43 +313,80 @@ body {
   transform: translateY(-20px);
   animation: collectStep var(--animation-duration-base) ease forwards;
   cursor: pointer;
-  transition: var(--transition-colors), var(--transition-transform);
+  transition: var(--transition-base);
   user-select: none;
-  /* Enhanced accessibility */
   -webkit-tap-highlight-color: transparent;
   position: relative;
+  
+  &:hover, &:focus-visible {
+    background-color: color-mix(in srgb, var(--color-brand-primary) 20%, transparent);
+    border-color: color-mix(in srgb, var(--color-brand-primary) 40%, transparent);
+    color: var(--color-interactive-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-glow);
+  }
+  
+  &:active {
+    transform: translateY(-1px);
+    transition-duration: var(--animation-duration-fast);
+  }
 }
 
-/* Step entering animation */
-.collected-step-entering {
-  opacity: 0;
-  transform: translateX(-20px);
+/* Responsive step titles */
+.collected-step-title-short {
+  display: none;
 }
 
-.collected-step-entered {
-  opacity: 1;
-  transform: translateX(0);
-  transition: opacity 0.3s ease, transform 0.3s ease;
+.collected-step-title-full {
+  display: inline;
 }
 
-/* Hover effects class */
-.collected-step.has-hover-effects:hover,
-.collected-step.has-hover-effects:focus-visible {
-  transform: translateY(-2px) scale(1.05);
+@media (max-width: 768px) {
+  .collected-step-title-full {
+    display: none;
+  }
+  
+  .collected-step-title-short {
+    display: inline;
+  }
+  
+  .collected-steps {
+    gap: var(--space-xs);
+    padding-inline: var(--space-md);
+  }
+  
+  .collected-step {
+    font-size: 0.75rem;
+    padding-block: calc(var(--space-xs) * 0.75);
+    padding-inline: var(--space-xs);
+  }
 }
 
-.collected-step:hover,
-.collected-step:focus-visible {
-  background-color: color-mix(in srgb, var(--color-brand-primary) 20%, transparent);
-  border-color: color-mix(in srgb, var(--color-brand-primary) 40%, transparent);
-  color: var(--color-interactive-hover);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-glow);
+/* Additional responsive rules for tall screens */
+@media (max-height: 600px) {
+  .progress-container {
+    max-block-size: 80px;
+    padding-block: var(--space-xs);
+  }
+  
+  .collected-steps {
+    gap: var(--space-xs);
+    padding-block: var(--space-xs);
+  }
+  
+  .collected-step {
+    font-size: 0.75rem;
+    padding-block: calc(var(--space-xs) * 0.5);
+    padding-inline: var(--space-xs);
+  }
 }
 
-.collected-step:active {
-  transform: translateY(-1px);
-  transition-duration: var(--animation-duration-fast);
+/* For very wide screens with many steps */
+@media (min-width: 1200px) and (max-height: 800px) {
+  .collected-steps {
+    justify-content: flex-start;
+    gap: var(--space-md);
+  }
 }
 
 @keyframes collectStep {
@@ -497,112 +402,90 @@ body {
 
 .hero {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  min-block-size: 100vh;
-  min-block-size: 100dvh;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  
-  /* Touch behavior optimization */
   touch-action: pan-y;
-  
-  /* Grid background instead of gradient */
   background-color: var(--color-bg-primary);
   background-image: 
     linear-gradient(0deg, 
-      rgba(59, 130, 246, 0.08), rgba(59, 130, 246, 0.08) 1px,
+      color-mix(in srgb, var(--color-brand-primary) 8%, transparent), 
+      color-mix(in srgb, var(--color-brand-primary) 8%, transparent) 1px,
       transparent 1px, transparent 50px),
     linear-gradient(90deg, 
-      rgba(59, 130, 246, 0.08), rgba(59, 130, 246, 0.08) 1px,
+      color-mix(in srgb, var(--color-brand-primary) 8%, transparent), 
+      color-mix(in srgb, var(--color-brand-primary) 8%, transparent) 1px,
       transparent 1px, transparent 50px);
   background-size: 50px 50px;
-
-  /* Skjul som default (samme mønster som .section) */
   z-index: 1;
   opacity: 0;
   visibility: hidden;
   transform: translateY(100px) scale(0.95);
   transition:
-    opacity 0.8s cubic-bezier(0.25,0.46,0.45,0.94),
-    transform 0.8s cubic-bezier(0.25,0.46,0.45,0.94),
+    opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94),
     visibility 0.8s step-end;
+    
+  &.visible {
+    z-index: 10;
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+    transition:
+      opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+      transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+      visibility 0.8s step-start;
+  }
 }
 
 .hero-content {
   text-align: center;
   max-inline-size: 800px;
   padding-inline: var(--space-lg);
-  /* Remove absolute positioning padding since we're using flexbox flow */
   padding-block-end: var(--space-lg);
-  /* Ensure content is properly spaced with scroll indicator in flow */
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--space-xl);
-  /* Take full height to push scroll indicator to bottom */
   min-block-size: calc(100vh - var(--space-4xl));
   min-block-size: calc(100dvh - var(--space-4xl));
   justify-content: center;
 }
 
-/* Når hero er aktiv */
-.hero.visible {
-  z-index: 10;
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0) scale(1);
-  transition:
-    opacity 0.8s cubic-bezier(0.25,0.46,0.45,0.94),
-    transform 0.8s cubic-bezier(0.25,0.46,0.45,0.94),
-    visibility 0.8s step-start;
-}
-
-/* Mouse cursor arrow overlay (Hero section only) */
 .hero-cursor-overlay {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   pointer-events: none;
   z-index: 10;
   opacity: 0;
   transition: opacity 0.3s ease-in-out;
-}
-
-/* Show cursor overlay only when hero is visible and mouse is moving */
-.hero.visible .hero-cursor-overlay.active {
-  opacity: 1;
-}
-
-/* Hide cursor arrow on touch devices and smaller screens */
-@media (hover: none) or (pointer: coarse) or (max-width: 768px) {
-  .hero-cursor-overlay {
+  
+  @media (hover: none) or (pointer: coarse) or (max-width: 768px) {
     display: none;
   }
 }
 
+.hero.visible .hero-cursor-overlay.active {
+  opacity: 1;
+}
+
 .title {
-  font-size: clamp(var(--font-size-5xl), 8vw, var(--font-size-6xl));
+  font-size: var(--font-size-6xl);
   font-weight: var(--font-weight-bold);
-  background: linear-gradient(135deg, var(--color-brand-primary), var(--color-brand-secondary), var(--color-brand-tertiary));
+  background: linear-gradient(135deg, 
+    var(--color-brand-primary), 
+    var(--color-brand-secondary), 
+    var(--color-brand-tertiary));
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  /* Fallback for browsers without background-clip support */
   color: var(--color-text-accent);
   margin-block-end: var(--space-lg);
   animation: fadeInUp var(--animation-duration-entrance) ease 0.2s both;
-  /* Improve text rendering for large text */
   text-rendering: optimizeLegibility;
-}
-
-/* Enhanced support detection for background-clip */
-@supports not (-webkit-background-clip: text) {
-  .title {
+  
+  @supports not (-webkit-background-clip: text) {
     background: none;
     color: var(--color-text-accent);
   }
@@ -613,7 +496,6 @@ body {
   color: var(--color-text-muted);
   font-weight: var(--font-weight-light);
   animation: fadeInUp var(--animation-duration-entrance) ease 0.4s both;
-  /* Better line height for subtitles */
   line-height: var(--line-height-tight);
 }
 
@@ -622,46 +504,40 @@ body {
    ============================================================================ */
 
 .scroll-indicator {
-  /* Reset button styles for semantic HTML */
   background: none;
   border: none;
-  padding: var(--space-md);
+  padding-block: var(--space-md);
+  padding-inline: var(--space-md);
   font: inherit;
   color: inherit;
-  
-  /* Change from absolute to relative positioning for proper flow */
   position: relative;
-  /* Add margin top to push it down from content */
   margin-block-start: var(--space-2xl);
-  /* Ensure perfect centering */
   margin-inline: auto;
   animation: bounce 2s ease-in-out infinite;
   cursor: pointer;
   opacity: 0.7;
-  transition: var(--transition-colors), var(--transition-transform);
+  transition: var(--transition-base);
   border-radius: var(--radius-full);
   background-color: color-mix(in srgb, var(--color-brand-primary) 10%, transparent);
   border: 1px solid var(--color-border-accent);
-  /* Improve touch targets */
   min-inline-size: 44px;
   min-block-size: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.scroll-indicator:hover,
-.scroll-indicator:focus-visible {
-  opacity: 1;
-  transform: translateY(-0.25rem) scale(1.1);
-  background-color: color-mix(in srgb, var(--color-brand-primary) 20%, transparent);
-  border-color: color-mix(in srgb, var(--color-brand-primary) 40%, transparent);
-  box-shadow: var(--shadow-glow);
-}
-
-.scroll-indicator:active {
-  transform: translateY(0) scale(0.95);
-  transition-duration: var(--animation-duration-fast);
+  
+  &:hover, &:focus-visible {
+    opacity: 1;
+    transform: translateY(-0.25rem) scale(1.1);
+    background-color: color-mix(in srgb, var(--color-brand-primary) 20%, transparent);
+    border-color: color-mix(in srgb, var(--color-brand-primary) 40%, transparent);
+    box-shadow: var(--shadow-glow);
+  }
+  
+  &:active {
+    transform: translateY(0) scale(0.95);
+    transition-duration: var(--animation-duration-fast);
+  }
 }
 
 .scroll-arrow {
@@ -670,25 +546,21 @@ body {
   border-inline-end: 2px solid var(--color-interactive-primary);
   border-block-end: 2px solid var(--color-interactive-primary);
   transform: rotate(45deg);
-  transition: var(--transition-colors), var(--transition-transform);
+  transition: var(--transition-base);
 }
 
-.scroll-indicator:hover .scroll-arrow,
-.scroll-indicator:focus-visible .scroll-arrow {
+.scroll-indicator:is(:hover, :focus-visible) .scroll-arrow {
   border-color: var(--color-interactive-hover);
   transform: rotate(45deg) translateY(-2px);
 }
 
-/* Step Scroll Indicators */
 .step-scroll-indicator {
-  /* Reset button styles for semantic HTML */
   background: none;
   border: none;
-  padding: var(--space-sm);
+  padding-block: var(--space-sm);
+  padding-inline: var(--space-sm);
   font: inherit;
   color: inherit;
-  
-  /* Original styles */
   position: absolute;
   inset-block-end: var(--space-lg);
   inset-inline-start: 50%;
@@ -696,7 +568,7 @@ body {
   animation: bounce 2s ease-in-out infinite;
   cursor: pointer;
   opacity: 0.5;
-  transition: var(--transition-colors), var(--transition-transform);
+  transition: var(--transition-base);
   border-radius: var(--radius-full);
   background-color: color-mix(in srgb, var(--color-brand-primary) 8%, transparent);
   border: 1px solid color-mix(in srgb, var(--color-brand-primary) 15%, transparent);
@@ -705,33 +577,30 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  
+  &:hover, &:focus-visible {
+    opacity: 0.8;
+    transform: translateX(-50%) scale(1.05);
+    background-color: color-mix(in srgb, var(--color-brand-primary) 15%, transparent);
+    border-color: color-mix(in srgb, var(--color-brand-primary) 30%, transparent);
+    box-shadow: 0 2px 15px color-mix(in srgb, var(--color-brand-primary) 20%, transparent);
+  }
+  
+  &:active {
+    transform: translateX(-50%) scale(0.95);
+  }
+  
+  & .scroll-arrow {
+    inline-size: 16px;
+    block-size: 16px;
+  }
+  
+  &:is(:hover, :focus-visible) .scroll-arrow {
+    border-color: var(--color-interactive-hover);
+    transform: rotate(45deg) translateY(-1px);
+  }
 }
 
-.step-scroll-indicator:hover,
-.step-scroll-indicator:focus-visible {
-  opacity: 0.8;
-  transform: translateX(-50%) scale(1.05);
-  background-color: color-mix(in srgb, var(--color-brand-primary) 15%, transparent);
-  border-color: color-mix(in srgb, var(--color-brand-primary) 30%, transparent);
-  box-shadow: 0 2px 15px color-mix(in srgb, var(--color-brand-primary) 20%, transparent);
-}
-
-.step-scroll-indicator:active {
-  transform: translateX(-50%) scale(0.95);
-}
-
-.step-scroll-indicator .scroll-arrow {
-  inline-size: 16px;
-  block-size: 16px;
-}
-
-.step-scroll-indicator:hover .scroll-arrow,
-.step-scroll-indicator:focus-visible .scroll-arrow {
-  border-color: var(--color-interactive-hover);
-  transform: rotate(45deg) translateY(-1px);
-}
-
-/* Hide step indicators when section not visible */
 .section:not(.visible) .step-scroll-indicator {
   opacity: 0;
   pointer-events: none;
@@ -770,40 +639,21 @@ body {
 }
 
 /* ============================================================================
-   LAYOUT COMPONENTS
+   LAYOUT SYSTEM
    ============================================================================ */
 
-/* Container with responsive max-widths */
 .container {
-  max-inline-size: min(var(--container-xl), calc(100vw - var(--space-lg)));
+  max-inline-size: var(--container-max-width);
   margin-inline: auto;
   padding-inline: var(--space-lg);
 }
 
-/* Section containers have scrollable content */
-.section .container {
-  flex: 1;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding-block: var(--space-4xl);
-  -webkit-overflow-scrolling: touch;
-  /* Ensure content flows naturally */
-  display: flex;
-  flex-direction: column;
-}
-
-/* Section styling with page transitions */
 .section {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0; /* ensures full viewport height */
-
+  inset: 0;
   display: flex;
-  flex-direction: column; /* stack header at top, content scrolls below */
+  flex-direction: column;
   align-items: stretch;
-
   background: var(--color-bg-primary);
   z-index: 1;
   opacity: 0;
@@ -813,62 +663,48 @@ body {
     opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94),
     transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94),
     visibility 0.8s step-end;
-
-  overflow: hidden; /* section container itself should not scroll */
+  overflow: hidden;
+  
+  & .container {
+    flex: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-block: var(--space-4xl);
+    -webkit-overflow-scrolling: touch;
+    display: flex;
+    flex-direction: column;
+    
+    &::-webkit-scrollbar { inline-size: 8px; }
+    &::-webkit-scrollbar-track { background: transparent; }
+    &::-webkit-scrollbar-thumb { 
+      background-color: var(--color-border-accent);
+      border-radius: var(--radius-sm);
+      
+      &:hover { background-color: var(--color-brand-primary); }
+    }
+  }
+  
+  &.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+    transition: 
+      opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+      transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+      visibility 0.8s step-start;
+    box-shadow: 
+      inset 0 1px 0 color-mix(in srgb, white 5%, transparent),
+      inset 0 -1px 0 color-mix(in srgb, white 5%, transparent);
+  }
+  
+  &.active { z-index: 10; }
+  
+  &.collected {
+    transform: translateY(-50px) scale(0.9);
+    opacity: 0.3;
+  }
 }
 
-/* Custom scrollbar for container and scrollable elements */
-:is(.section .container, .scrollable)::-webkit-scrollbar {
-  width: 8px;
-  block-size: 8px;
-}
-
-:is(.section .container, .scrollable)::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-:is(.section .container, .scrollable)::-webkit-scrollbar-thumb {
-  background-color: var(--color-border-accent);
-  border-radius: var(--radius-sm);
-}
-
-:is(.section .container, .scrollable)::-webkit-scrollbar-thumb:hover {
-  background-color: var(--color-brand-primary);
-}
-
-.section.visible {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0) scale(1);
-  transition: 
-    opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-    transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-    visibility 0.8s step-start;
-}
-
-/* Visual feedback for scrollable sections */
-.section.visible {
-  /* Add subtle shadow inset to indicate scrollable content when overflowing */
-  box-shadow: 
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.05);
-}
-
-.section.active {
-  z-index: 10;
-}
-
-.section.collected {
-  transform: translateY(-50px) scale(0.9);
-  opacity: 0.3;
-}
-
-/* Hero skal KUN være synlig med .visible */
-/* (Consolidated single hero section) */
-
-/* (Rules moved to main hero section above) */
-
-/* Introduction section with enhanced background */
 .intro-section {
   background: linear-gradient(135deg, 
     color-mix(in srgb, var(--color-brand-primary) 5%, transparent), 
@@ -876,6 +712,14 @@ body {
   );
   border-block-start: 1px solid color-mix(in srgb, var(--color-brand-primary) 10%, transparent);
   border-block-end: 1px solid color-mix(in srgb, var(--color-brand-tertiary) 10%, transparent);
+}
+
+.final-section {
+  background: linear-gradient(135deg, 
+    color-mix(in srgb, var(--color-brand-success) 5%, transparent), 
+    color-mix(in srgb, var(--color-brand-primary) 5%, transparent)
+  );
+  border-block-start: 1px solid color-mix(in srgb, var(--color-brand-success) 10%, transparent);
 }
 
 /* ============================================================================
@@ -887,6 +731,13 @@ body {
   align-items: center;
   gap: var(--space-lg);
   margin-block-end: var(--space-xl);
+  
+  & h2 {
+    font-size: var(--font-size-4xl);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-accent);
+    line-height: var(--line-height-tight);
+  }
 }
 
 .step-number {
@@ -897,47 +748,35 @@ body {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   opacity: 0.3;
-  /* Fallback for browsers without background-clip support */
   color: var(--color-text-muted);
-  /* Improve number readability */
   font-variant-numeric: tabular-nums;
-}
-
-@supports not (-webkit-background-clip: text) {
-  .step-number {
+  
+  @supports not (-webkit-background-clip: text) {
     background: none;
     color: var(--color-text-muted);
   }
-}
-
-.step-header h2 {
-  font-size: var(--font-size-4xl);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-accent);
-  line-height: var(--line-height-tight);
 }
 
 .step-content {
   max-inline-size: 900px;
   margin-inline: auto;
   text-align: center;
-}
-
-.step-content h2 {
-  font-size: var(--font-size-4xl);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-accent);
-  margin-block-end: var(--space-lg);
-  line-height: var(--line-height-tight);
-}
-
-.step-content p {
-  font-size: var(--font-size-lg);
-  color: var(--color-text-secondary);
-  margin-block-end: var(--space-lg);
-  line-height: var(--line-height-relaxed);
-  /* Better text balance */
-  text-wrap: balance;
+  
+  & h2 {
+    font-size: var(--font-size-4xl);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-accent);
+    margin-block-end: var(--space-lg);
+    line-height: var(--line-height-tight);
+  }
+  
+  & p {
+    font-size: var(--font-size-lg);
+    color: var(--color-text-secondary);
+    margin-block-end: var(--space-lg);
+    line-height: var(--line-height-relaxed);
+    text-wrap: balance;
+  }
 }
 
 /* ============================================================================
@@ -951,21 +790,19 @@ body {
   position: relative;
   border-radius: var(--radius-lg);
   overflow: hidden;
-  /* Enhanced glow effect similar to collected-steps */
   box-shadow: 
-    0 25px 50px -12px rgba(0, 0, 0, 0.25),
-    0 0 20px rgba(59, 130, 246, 0.15),
-    0 0 40px rgba(59, 130, 246, 0.08),
-    inset 0 0 0 1px rgba(59, 130, 246, 0.2);
+    0 25px 50px -12px color-mix(in srgb, black 25%, transparent),
+    0 0 20px color-mix(in srgb, var(--color-brand-primary) 15%, transparent),
+    0 0 40px color-mix(in srgb, var(--color-brand-primary) 8%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--color-brand-primary) 20%, transparent);
   background: linear-gradient(135deg, 
-    rgba(59, 130, 246, 0.05), 
-    rgba(139, 92, 246, 0.05)
+    color-mix(in srgb, var(--color-brand-primary) 5%, transparent), 
+    color-mix(in srgb, var(--color-brand-tertiary) 5%, transparent)
   );
-  padding: 2px;
-  /* Chrome-specific sizing fixes */
-  width: 100%;
-  max-width: 900px;
-  /* Subtle glow animation */
+  padding-block: 2px;
+  padding-inline: 2px;
+  inline-size: 100%;
+  max-inline-size: 900px;
   animation: video-glow 4s ease-in-out infinite alternate;
 }
 
@@ -977,35 +814,36 @@ body {
   border-radius: calc(var(--radius-lg) - 2px);
   background-color: var(--color-bg-secondary);
   object-fit: cover;
-  /* Smooth loading transition */
   opacity: 0;
-  transition: opacity 0.6s var(--timing-ease-out);
-  /* Remove transform from will-change to prevent zoom */
+  transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1);
   will-change: opacity;
-  /* Chrome-specific fixes for video sizing */
-  min-height: 300px; /* Ensure minimum height in Chrome */
+  min-block-size: 300px;
+  
+  &[data-loaded="true"],
+  &:not([poster]) { opacity: 1; }
+  
+  &:focus-visible {
+    outline: 2px solid var(--color-brand-primary);
+    outline-offset: 4px;
+  }
 }
 
-/* Video loaded state */
-.showcase-video[data-loaded="true"],
-.showcase-video:not([poster]) {
-  opacity: 1;
-}
-
-/* Video controls styling */
 .video-controls {
   position: absolute;
-  bottom: 16px;
-  left: 50%;
+  inset-block-end: 16px;
+  inset-inline-start: 50%;
   transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: var(--space-sm);
-  background: rgba(0, 0, 0, 0.7);
+  background: color-mix(in srgb, black 70%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border-radius: var(--radius-full);
-  padding: var(--space-sm) var(--space-md);
+  padding-block: var(--space-sm);
+  padding-inline: var(--space-md);
   opacity: 0;
-  transition: opacity 0.3s var(--timing-ease-out);
+  transition: opacity 0.3s cubic-bezier(0.22, 1, 0.36, 1);
   z-index: 10;
 }
 
@@ -1019,50 +857,49 @@ body {
   border: none;
   color: var(--color-text-accent);
   cursor: pointer;
-  padding: var(--space-xs);
+  padding-block: var(--space-xs);
+  padding-inline: var(--space-xs);
   border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s var(--timing-ease-out);
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
   min-inline-size: 32px;
   min-block-size: 32px;
+  
+  &:hover {
+    background: color-mix(in srgb, white 10%, transparent);
+    color: var(--color-brand-primary);
+  }
+  
+  &:focus-visible {
+    outline: 2px solid var(--color-brand-primary);
+    outline-offset: 2px;
+  }
+  
+  & svg {
+    inline-size: 16px;
+    block-size: 16px;
+  }
 }
 
-.video-control-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--color-brand-primary);
-}
-
-.video-control-btn:focus-visible {
-  outline: 2px solid var(--color-brand-primary);
-  outline-offset: 2px;
-}
-
-.video-control-btn svg {
-  inline-size: 16px;
-  block-size: 16px;
-}
-
-/* Large play overlay */
 .video-play-overlay {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.4);
+  background: color-mix(in srgb, black 40%, transparent);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   transition: opacity var(--transition-base);
   z-index: 15;
   border-radius: calc(var(--radius-lg) - 2px);
-}
-
-.video-play-overlay.hidden {
-  opacity: 0;
-  pointer-events: none;
+  
+  &.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
 }
 
 .video-play-overlay-btn {
@@ -1071,235 +908,275 @@ body {
   align-items: center;
   justify-content: center;
   gap: var(--space-md);
-  padding: var(--space-2xl) var(--space-xl);
-  background: rgba(0, 0, 0, 0.85);
+  padding-block: var(--space-2xl);
+  padding-inline: var(--space-xl);
+  background: color-mix(in srgb, black 85%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 2px solid var(--color-brand-primary);
   border-radius: var(--radius-lg);
   color: var(--color-text-primary);
   cursor: pointer;
-  transition: all 0.3s var(--timing-ease-out);
-  min-width: 250px;
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  min-inline-size: 250px;
   text-align: center;
   box-shadow: 
-    0 20px 25px -5px rgba(0, 0, 0, 0.3),
-    0 10px 10px -5px rgba(0, 0, 0, 0.1),
-    0 0 20px rgba(59, 130, 246, 0.2);
-}
-
-.video-play-overlay-btn:hover,
-.video-play-overlay-btn:focus-visible {
-  background: rgba(59, 130, 246, 0.15);
-  border-color: var(--color-interactive-hover);
-  color: var(--color-interactive-hover);
-  transform: scale(1.05) translateY(-2px);
-  box-shadow: 
-    0 25px 30px -5px rgba(0, 0, 0, 0.4),
-    0 15px 15px -5px rgba(0, 0, 0, 0.15),
-    0 0 30px rgba(59, 130, 246, 0.4);
-}
-
-.video-play-overlay-btn:focus-visible {
-  outline: 3px solid var(--color-brand-primary);
-  outline-offset: 3px;
+    0 20px 25px -5px color-mix(in srgb, black 30%, transparent),
+    0 10px 10px -5px color-mix(in srgb, black 10%, transparent),
+    0 0 20px color-mix(in srgb, var(--color-brand-primary) 20%, transparent);
+    
+  &:hover, &:focus-visible {
+    background: color-mix(in srgb, var(--color-brand-primary) 15%, transparent);
+    border-color: var(--color-interactive-hover);
+    color: var(--color-interactive-hover);
+    transform: scale(1.05) translateY(-2px);
+    box-shadow: 
+      0 25px 30px -5px color-mix(in srgb, black 40%, transparent),
+      0 15px 15px -5px color-mix(in srgb, black 15%, transparent),
+      0 0 30px color-mix(in srgb, var(--color-brand-primary) 40%, transparent);
+  }
+  
+  &:focus-visible {
+    outline: 3px solid var(--color-brand-primary);
+    outline-offset: 3px;
+  }
 }
 
 .play-overlay-icon {
-  width: 4rem;
-  height: 4rem;
-  margin-bottom: var(--space-xs);
+  inline-size: 4rem;
+  block-size: 4rem;
+  margin-block-end: var(--space-xs);
 }
 
 .play-overlay-text {
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-bold);
   letter-spacing: 0.025em;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 2px 4px color-mix(in srgb, black 50%, transparent);
 }
 
-/* Focus states for accessibility */
-.showcase-video:focus-visible {
-  outline: 2px solid var(--color-brand-primary);
-  outline-offset: 4px;
-}
-
-/* Enhanced glow animation */
 @keyframes video-glow {
   0% {
     box-shadow: 
-      0 25px 50px -12px rgba(0, 0, 0, 0.25),
-      0 0 20px rgba(59, 130, 246, 0.1),
-      0 0 40px rgba(59, 130, 246, 0.05),
-      inset 0 0 0 1px rgba(59, 130, 246, 0.15);
+      0 25px 50px -12px color-mix(in srgb, black 25%, transparent),
+      0 0 20px color-mix(in srgb, var(--color-brand-primary) 10%, transparent),
+      0 0 40px color-mix(in srgb, var(--color-brand-primary) 5%, transparent),
+      inset 0 0 0 1px color-mix(in srgb, var(--color-brand-primary) 15%, transparent);
   }
   100% {
     box-shadow: 
-      0 25px 50px -12px rgba(0, 0, 0, 0.25),
-      0 0 25px rgba(59, 130, 246, 0.2),
-      0 0 50px rgba(59, 130, 246, 0.1),
-      inset 0 0 0 1px rgba(59, 130, 246, 0.25);
-  }
-}
-
-/* Reduced motion preference */
-@media (prefers-reduced-motion: reduce) {
-  .video-showcase {
-    animation: none;
-  }
-  
-  .showcase-video {
-    transition: opacity 0.3s ease;
-  }
-  
-  .video-play-overlay-btn:hover,
-  .video-play-overlay-btn:focus-visible {
-    transform: none;
-  }
-  
-  .video-controls {
-    transition: opacity 0.2s ease;
-  }
-}
-
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-  .video-showcase {
-    box-shadow: 
-      0 25px 50px -12px rgba(0, 0, 0, 0.5),
-      0 0 0 2px var(--color-text-primary);
-  }
-  
-  .video-controls {
-    background: rgba(0, 0, 0, 0.9);
-    border: 1px solid var(--color-text-primary);
+      0 25px 50px -12px color-mix(in srgb, black 25%, transparent),
+      0 0 25px color-mix(in srgb, var(--color-brand-primary) 20%, transparent),
+      0 0 50px color-mix(in srgb, var(--color-brand-primary) 10%, transparent),
+      inset 0 0 0 1px color-mix(in srgb, var(--color-brand-primary) 25%, transparent);
   }
 }
 
 /* ============================================================================
-   CODE BLOCKS
+   CODE BLOCKS & CONTENT
    ============================================================================ */
 
 .code-block {
   background-color: var(--color-bg-tertiary);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
-  padding: var(--space-lg);
+  padding-block: var(--space-lg);
+  padding-inline: var(--space-lg);
   margin-block: var(--space-lg);
   font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 
                'Courier New', monospace;
   position: relative;
   overflow-x: auto;
-  /* Improve code readability */
   font-variant-ligatures: common-ligatures;
+  
+  & code {
+    color: var(--color-brand-secondary);
+    font-size: var(--font-size-base);
+    white-space: nowrap;
+    font-weight: var(--font-weight-medium);
+  }
+  
+  & a {
+    color: var(--color-brand-primary);
+    text-decoration: none;
+    transition: var(--transition-base);
+    border-block-end: 1px solid transparent;
+    
+    &:hover, &:focus-visible {
+      color: var(--color-interactive-primary);
+      border-block-end-color: var(--color-interactive-primary);
+    }
+  }
 }
 
-.code-block code {
-  color: var(--color-brand-secondary);
-  font-size: var(--font-size-base);
-  white-space: nowrap;
-  /* Improve code legibility */
+/* Copy Button Styles */
+.copy, .copy-btn {
+  background: color-mix(in srgb, var(--color-bg-secondary) 90%, transparent);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-base);
+  padding-block: var(--space-sm);
+  padding-inline: var(--space-md);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: var(--transition-base);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-block-start: var(--space-sm);
+  margin-inline-start: auto;
+  margin-inline-end: 0;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  min-inline-size: 44px;
+  min-block-size: 44px;
+  justify-content: center;
+  position: relative;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  
+  &:hover, &:focus-visible {
+    background: color-mix(in srgb, var(--color-brand-primary) 10%, var(--color-bg-secondary));
+    border-color: var(--color-border-accent);
+    color: var(--color-interactive-primary);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-base);
+  }
+  
+  &:active {
+    transform: translateY(0);
+    transition-duration: var(--animation-duration-fast);
+  }
+  
+  /* Copy states */
+  &.copy-ok {
+    background: color-mix(in srgb, var(--color-brand-success) 15%, var(--color-bg-secondary));
+    border-color: var(--color-brand-success);
+    color: var(--color-brand-success);
+  }
+  
+  &.copy-fail {
+    background: color-mix(in srgb, var(--color-brand-warning) 15%, var(--color-bg-secondary));
+    border-color: var(--color-brand-warning);
+    color: var(--color-brand-warning);
+  }
+  
+  /* Icon styles */
+  & .copy-icon {
+    inline-size: 16px;
+    block-size: 16px;
+    flex-shrink: 0;
+  }
+  
+  & .copy-text {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+  }
 }
 
-.code-block a {
-  color: var(--color-brand-primary);
-  text-decoration: none;
-  transition: var(--transition-colors);
-  /* Better link indication */
-  border-block-end: 1px solid transparent;
+/* Helper textarea for fallback copy */
+.copy-helper-textarea {
+  position: absolute;
+  inset-block-start: -9999px;
+  inset-inline-start: -9999px;
+  opacity: 0;
+  pointer-events: none;
 }
-
-.code-block a:hover,
-.code-block a:focus-visible {
-  color: var(--color-interactive-primary);
-  border-block-end-color: var(--color-interactive-primary);
-}
-
-/* ============================================================================
-   LISTS AND CONTENT
-   ============================================================================ */
 
 .step-list {
   list-style: none;
   margin-block: var(--space-lg);
+  
+  & li {
+    position: relative;
+    padding-block: var(--space-sm);
+    padding-inline-start: var(--space-xl);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-relaxed);
+    
+    &::before {
+      content: '→';
+      position: absolute;
+      inset-inline-start: 0;
+      inset-block-start: var(--space-sm);
+      color: var(--color-brand-primary);
+      font-weight: var(--font-weight-bold);
+    }
+  }
+  
+  & strong {
+    color: var(--color-text-accent);
+    font-weight: var(--font-weight-semibold);
+  }
 }
 
-.step-list li {
-  position: relative;
-  padding-block: var(--space-sm);
-  padding-inline-start: var(--space-xl);
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-base);
-  line-height: var(--line-height-relaxed);
-}
-
-.step-list li::before {
-  content: '→';
-  position: absolute;
-  inset-inline-start: 0;
-  color: var(--color-brand-primary);
-  font-weight: var(--font-weight-bold);
-  /* Better arrow positioning */
-  inset-block-start: var(--space-sm);
-}
-
-.step-list strong {
-  color: var(--color-text-accent);
-  font-weight: var(--font-weight-semibold);
-}
-
-/* Note/Alert Component */
 .note {
   background-color: color-mix(in srgb, var(--color-brand-warning) 10%, transparent);
   border: 1px solid color-mix(in srgb, var(--color-brand-warning) 20%, transparent);
   border-radius: var(--radius-base);
-  padding: var(--space-md);
+  padding-block: var(--space-md);
+  padding-inline: var(--space-2xl) var(--space-md);
   color: var(--color-brand-warning);
   font-size: var(--font-size-sm);
   margin-block: var(--space-lg);
-  /* Add icon space */
   position: relative;
-  padding-inline-start: var(--space-2xl);
+  
+  &::before {
+    content: '⚠️';
+    position: absolute;
+    inset-inline-start: var(--space-md);
+    inset-block-start: var(--space-md);
+    font-size: var(--font-size-base);
+  }
 }
 
-.note::before {
-  content: '⚠️';
-  position: absolute;
-  inset-inline-start: var(--space-md);
-  inset-block-start: var(--space-md);
-  font-size: var(--font-size-base);
-}
-
-/* Security Section Component */
 .security-section {
   background-color: color-mix(in srgb, var(--color-brand-success) 8%, transparent);
   border: 1px solid color-mix(in srgb, var(--color-brand-success) 20%, transparent);
   border-radius: var(--radius-lg);
-  padding: var(--space-xl);
+  padding-block: var(--space-xl);
+  padding-inline: var(--space-xl);
   margin-block: var(--space-xl);
   position: relative;
-}
-
-.security-section h4 {
-  color: var(--color-brand-success);
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  margin-block-end: var(--space-md);
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-}
-
-.security-section p {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  margin-block-end: var(--space-md);
+  
+  & h4 {
+    color: var(--color-brand-success);
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    margin-block-end: var(--space-md);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+  }
+  
+  & p {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    margin-block-end: var(--space-md);
+    
+    &:last-of-type {
+      color: var(--color-brand-warning);
+      font-weight: var(--font-weight-medium);
+      text-align: center;
+      margin-block-start: var(--space-lg);
+      margin-block-end: 0;
+    }
+  }
+  
+  & .code-block {
+    margin-block: var(--space-sm);
+    background-color: var(--color-bg-secondary);
+  }
 }
 
 .hash-display {
   background-color: var(--color-bg-tertiary);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-base);
-  padding: var(--space-md);
+  padding-block: var(--space-md);
+  padding-inline: var(--space-md);
   margin-block: var(--space-md);
   font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
 }
@@ -1311,53 +1188,11 @@ body {
   word-break: break-all;
   line-height: var(--line-height-relaxed);
   background-color: color-mix(in srgb, var(--color-brand-success) 5%, transparent);
-  padding: var(--space-sm);
+  padding-block: var(--space-sm);
+  padding-inline: var(--space-sm);
   border-radius: var(--radius-sm);
   margin-block-start: var(--space-xs);
   font-weight: var(--font-weight-medium);
-}
-
-.security-section .code-block {
-  margin-block: var(--space-sm);
-  background-color: var(--color-bg-secondary);
-}
-
-/* Security warning styling */
-.security-section p:last-of-type {
-  color: var(--color-brand-warning);
-  font-weight: var(--font-weight-medium);
-  text-align: center;
-  margin-block-start: var(--space-lg);
-  margin-block-end: 0;
-}
-
-/* Responsive adjustments for security section on smaller screens */
-@media (max-height: 700px) {
-  .security-section {
-    padding: var(--space-lg);
-    margin-block: var(--space-lg);
-  }
-  
-  .security-section h4 {
-    font-size: var(--font-size-base);
-    margin-block-end: var(--space-sm);
-  }
-  
-  .security-section p {
-    font-size: var(--font-size-xs);
-    margin-block-end: var(--space-sm);
-  }
-  
-  .hash-display {
-    padding: var(--space-sm);
-    margin-block: var(--space-sm);
-  }
-  
-  .hash-value {
-    font-size: var(--font-size-xs);
-    line-height: var(--line-height-base);
-    padding: var(--space-xs);
-  }
 }
 
 /* ============================================================================
@@ -1375,57 +1210,38 @@ body {
   background-color: color-mix(in srgb, var(--color-text-primary) 2%, transparent);
   border: 1px solid color-mix(in srgb, var(--color-text-primary) 10%, transparent);
   border-radius: var(--radius-lg);
-  padding: var(--space-xl);
+  padding-block: var(--space-xl);
+  padding-inline: var(--space-xl);
   text-align: center;
-  transition: var(--transition-transform), var(--transition-colors);
-  /* Better focus indication */
+  transition: var(--transition-base);
   position: relative;
-}
-
-.feature:hover,
-.feature:focus-within {
-  transform: translateY(-5px);
-  border-color: color-mix(in srgb, var(--color-brand-primary) 30%, transparent);
-  box-shadow: var(--shadow-md);
-}
-
-.feature p {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-  line-height: var(--line-height-relaxed);
+  
+  &:hover, &:focus-within {
+    transform: translateY(-5px);
+    border-color: color-mix(in srgb, var(--color-brand-primary) 30%, transparent);
+    box-shadow: var(--shadow-md);
+  }
+  
+  & p {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-relaxed);
+  }
 }
 
 /* ============================================================================
-   SPECIAL SECTIONS
+   FOOTER
    ============================================================================ */
 
-.final-section {
-  background: linear-gradient(135deg, 
-    color-mix(in srgb, var(--color-brand-success) 5%, transparent), 
-    color-mix(in srgb, var(--color-brand-primary) 5%, transparent)
-  );
-  border-block-start: 1px solid color-mix(in srgb, var(--color-brand-success) 10%, transparent);
-}
-
-.footer {
-  background-color: color-mix(in srgb, var(--color-bg-primary) 50%, black);
-  border-block-start: 1px solid var(--color-bg-secondary);
-  padding-block: var(--space-2xl);
-  text-align: center;
-}
-
-.footer p {
-  color: var(--color-text-muted);
-  margin-block: var(--space-xs);
-  font-size: var(--font-size-sm);
-}
-
-/* Footer er fixed i bunden, skjult som udgangspunkt */
 .footer {
   position: fixed;
   inset-inline: 0;
   inset-block-end: 0;
   z-index: 4;
+  background-color: color-mix(in srgb, var(--color-bg-primary) 50%, black);
+  border-block-start: 1px solid var(--color-bg-secondary);
+  padding-block: var(--space-2xl);
+  text-align: center;
   opacity: 0;
   visibility: hidden;
   transform: translateY(20px);
@@ -1433,9 +1249,14 @@ body {
     opacity 0.4s ease,
     transform 0.4s ease,
     visibility 0.4s step-end;
+    
+  & p {
+    color: var(--color-text-muted);
+    margin-block: var(--space-xs);
+    font-size: var(--font-size-sm);
+  }
 }
 
-/* Når step 5 er synlig, viser vi footeren */
 main:has(#step-5.visible) + .footer {
   opacity: 1;
   visibility: visible;
@@ -1446,29 +1267,19 @@ main:has(#step-5.visible) + .footer {
     visibility 0.4s step-start;
 }
 
-
 /* ============================================================================
    RESPONSIVE DESIGN
    ============================================================================ */
 
-/* Mobile-first approach with modern media queries */
-
-/* Extra small screens */
 @media (max-width: 23.4375rem) { /* 375px */
-  /* Ultra-compact progress container */
   .progress-container {
-    padding: var(--space-2xs) var(--space-xs);
-    min-height: 40px;
+    padding-block: var(--space-2xs);
+    padding-inline: var(--space-xs);
+    min-block-size: 40px;
   }
   
-  body {
-    padding-top: 40px;
-  }
-  
-  /* Hide collected steps on very small screens to save space */
-  .collected-steps {
-    display: none;
-  }
+  body { padding-block-start: 40px; }
+  .collected-steps { display: none; }
   
   .hero-content {
     padding-block-end: var(--space-sm);
@@ -1477,18 +1288,11 @@ main:has(#step-5.visible) + .footer {
     min-block-size: calc(100dvh - var(--space-lg));
   }
   
-  .title {
-    font-size: var(--font-size-4xl);
-  }
-  
-  .scroll-indicator {
-    margin-block-start: var(--space-lg);
-  }
+  .scroll-indicator { margin-block-start: var(--space-lg); }
 }
 
 @media (max-width: 768px) {
   :root {
-    /* Adjust spacing for mobile */
     --space-lg: 1rem;
     --space-xl: 1.25rem;
     --space-2xl: 2rem;
@@ -1496,19 +1300,15 @@ main:has(#step-5.visible) + .footer {
     --space-4xl: 3rem;
   }
   
-  /* Compact progress container on mobile */
   .progress-container {
-    padding: var(--space-xs) var(--space-sm);
-    min-height: 50px;
+    padding-block: var(--space-xs);
+    padding-inline: var(--space-sm);
+    min-block-size: 50px;
     gap: var(--space-sm);
   }
   
-  /* Reduce body padding for smaller progress container */
-  body {
-    padding-top: 50px;
-  }
+  body { padding-block-start: 50px; }
   
-  /* Make collected steps smaller on mobile */
   .collected-steps {
     gap: var(--space-xs);
     padding-inline: var(--space-sm);
@@ -1518,19 +1318,11 @@ main:has(#step-5.visible) + .footer {
     padding-block: var(--space-2xs);
     padding-inline: var(--space-xs);
     font-size: var(--font-size-xs);
+    min-block-size: 44px;
+    display: flex;
+    align-items: center;
   }
   
-  .title {
-    font-size: var(--font-size-5xl);
-    /* Better text wrapping on mobile */
-    text-wrap: balance;
-  }
-  
-  .subtitle {
-    font-size: var(--font-size-xl);
-  }
-  
-  /* Hero section mobile adjustments */
   .hero-content {
     padding-block-end: var(--space-lg);
     gap: var(--space-lg);
@@ -1538,10 +1330,7 @@ main:has(#step-5.visible) + .footer {
     min-block-size: calc(100dvh - var(--space-2xl));
   }
   
-  /* Adjust scroll indicator spacing on mobile */
-  .scroll-indicator {
-    margin-block-start: var(--space-xl);
-  }
+  .scroll-indicator { margin-block-start: var(--space-xl); }
   
   .step-header {
     flex-direction: column;
@@ -1549,129 +1338,131 @@ main:has(#step-5.visible) + .footer {
     gap: var(--space-sm);
   }
   
-  .step-number {
-    font-size: var(--font-size-5xl);
-  }
-  
-  .step-header h2,
-  .step-content h2 {
-    font-size: var(--font-size-3xl);
-  }
-  
   .features {
     grid-template-columns: 1fr;
     gap: var(--space-lg);
   }
   
-  .collected-steps {
-    padding-block: var(--space-sm);
-    padding-inline: var(--space-md);
-    gap: var(--space-sm);
-  }
-  
-  /* Improve touch targets on mobile */
-  .collected-step {
-    min-block-size: 44px;
-    display: flex;
-    align-items: center;
-  }
-  
-  /* Better mobile scrolling for code blocks */
   .code-block {
-    padding: var(--space-md);
+    padding-block: var(--space-md);
+    padding-inline: var(--space-md);
     font-size: var(--font-size-sm);
   }
   
-  /* Responsive copy buttons */
-  .copy-btn {
-    padding: var(--space-2xs) var(--space-xs);
-    font-size: var(--font-size-xs);
-    min-height: 28px;
-  }
-  
-  .copy-icon {
-    width: 0.875rem;
-    height: 0.875rem;
-  }
-  
-  /* Responsive video sizing */
   .video-showcase {
     margin-block: var(--space-xl);
     border-radius: var(--radius-md);
     max-inline-size: 100%;
   }
   
-  .showcase-video {
-    border-radius: calc(var(--radius-md) - 2px);
-  }
+  .showcase-video { border-radius: calc(var(--radius-md) - 2px); }
   
   .video-controls {
-    bottom: 12px;
-    padding: var(--space-xs) var(--space-sm);
+    inset-block-end: 12px;
+    padding-block: var(--space-xs);
+    padding-inline: var(--space-sm);
   }
   
-  /* Responsive play overlay */
   .video-play-overlay-btn {
-    min-width: 200px;
-    padding: var(--space-xl) var(--space-md);
+    min-inline-size: 200px;
+    padding-block: var(--space-xl);
+    padding-inline: var(--space-md);
   }
   
   .play-overlay-icon {
-    width: 3rem;
-    height: 3rem;
+    inline-size: 3rem;
+    block-size: 3rem;
   }
   
-  .play-overlay-text {
-    font-size: var(--font-size-lg);
+  .security-section {
+    padding-block: var(--space-lg);
+    padding-inline: var(--space-lg);
+    margin-block: var(--space-lg);
+    
+    & h4 {
+      font-size: var(--font-size-base);
+      margin-block-end: var(--space-sm);
+    }
+    
+    & p {
+      font-size: var(--font-size-xs);
+      margin-block-end: var(--space-sm);
+    }
+  }
+  
+  .hash-display {
+    padding-block: var(--space-sm);
+    padding-inline: var(--space-sm);
+    margin-block: var(--space-sm);
+  }
+  
+  .hash-value {
+    font-size: var(--font-size-xs);
+    line-height: var(--line-height-base);
+    padding-block: var(--space-xs);
+    padding-inline: var(--space-xs);
   }
 }
 
-/* Tablet styles */
 @media (min-width: 48rem) and (max-width: 63.9375rem) { /* 768px - 1023px */
-  .container {
-    max-inline-size: var(--container-md);
-  }
-  
-  .features {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  .features { grid-template-columns: repeat(2, 1fr); }
 }
 
-/* Desktop styles */
 @media (min-width: 64rem) { /* 1024px+ */
-  .container {
-    max-inline-size: var(--container-lg);
-  }
-  
-  .features {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-/* Large desktop styles */
-@media (min-width: 80rem) { /* 1280px+ */
-  .container {
-    max-inline-size: var(--container-xl);
-  }
+  .features { grid-template-columns: repeat(3, 1fr); }
 }
 
 /* ============================================================================
-   HIGH DPI AND PRINT STYLES
+   HIGH CONTRAST & ACCESSIBILITY
    ============================================================================ */
 
-/* High DPI displays */
+@media (prefers-contrast: high) {
+  :root {
+    --color-border-accent: currentColor;
+    --color-interactive-primary: currentColor;
+  }
+  
+  .collected-step,
+  .scroll-indicator,
+  .step-scroll-indicator {
+    border-width: 2px;
+  }
+  
+  .video-showcase {
+    box-shadow: 
+      0 25px 50px -12px color-mix(in srgb, black 50%, transparent),
+      0 0 0 2px var(--color-text-primary);
+  }
+  
+  .video-controls {
+    background: color-mix(in srgb, black 90%, transparent);
+    border: 1px solid var(--color-text-primary);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .video-showcase { animation: none; }
+  
+  .showcase-video { transition: opacity 0.3s ease; }
+  
+  .video-play-overlay-btn:is(:hover, :focus-visible) { transform: none; }
+  
+  .video-controls { transition: opacity 0.2s ease; }
+}
+
+/* ============================================================================
+   PRINT & HIGH DPI
+   ============================================================================ */
+
 @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
-  /* Optimize for high DPI screens */
   body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 }
 
-/* Print styles */
 @media print {
   :root {
-    /* Use print-friendly colors */
     --color-bg-primary: white;
     --color-text-primary: black;
     --color-text-secondary: #333;
@@ -1685,7 +1476,8 @@ main:has(#step-5.visible) + .footer {
   
   .progress-container,
   .scroll-indicator,
-  .step-scroll-indicator {
+  .step-scroll-indicator,
+  .prelaunch-warning {
     display: none !important;
   }
   
@@ -1694,372 +1486,55 @@ main:has(#step-5.visible) + .footer {
     page-break-inside: avoid;
   }
   
-  .step-header {
-    page-break-after: avoid;
-  }
-  
-  .features {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* ============================================================================
-   ACCESSIBILITY ENHANCEMENTS
-   ============================================================================ */
-
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-  :root {
-    --color-border-accent: currentColor;
-    --color-interactive-primary: currentColor;
-  }
-  
-  .collected-step,
-  .scroll-indicator,
-  .step-scroll-indicator {
-    border-width: 2px;
-  }
-}
-
-/* Focus visible improvements */
-:focus-visible {
-  outline: 2px solid var(--color-brand-primary);
-  outline-offset: 2px;
-  border-radius: var(--radius-sm);
-}
-
-/* Screen reader only content */
-.sr-only {
-  position: absolute;
-  inline-size: 1px;
-  block-size: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-/* ============================================================================
-   BROWSER-SPECIFIC OPTIMIZATIONS
-   ============================================================================ */
-
-/* Safari-specific optimizations */
-
-/* Firefox-specific optimizations */
-
-/* Edge/Chromium-specific optimizations */
-
-/* ============================================================================
-   PERFORMANCE OPTIMIZATIONS
-   ============================================================================ */
-
-/* Use GPU acceleration for animations */
-.collected-step,
-.scroll-indicator,
-.step-scroll-indicator,
-.feature {
-  will-change: transform;
-}
-
-/* Remove will-change after animation completes */
-.section.visible {
-  will-change: auto;
-}
-
-/* ============================================================================
-   COPY BUTTON AND TOAST FEEDBACK STATES
-   ============================================================================ */
-
-/* Copy button states for CSP compliance */
-button.copy {
-  position: relative;
-  transition: var(--transition-colors), var(--transition-transform);
-}
-
-/* Copy button styling */
-.copy-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-xs);
-  padding: var(--space-xs) var(--space-sm);
-  margin-block-start: var(--space-sm);
-  background: var(--color-bg-tertiary);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-sm);
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  font-family: inherit;
-  cursor: pointer;
-  transition: var(--transition-colors), var(--transition-transform);
-  min-height: 32px;
-}
-
-.copy-btn:hover,
-.copy-btn:focus-visible {
-  background: var(--color-bg-secondary);
-  border-color: var(--color-brand-primary);
-  color: var(--color-interactive-primary);
-  transform: translateY(-1px);
-}
-
-.copy-btn:active {
-  transform: translateY(0);
-  transition-duration: var(--animation-duration-fast);
-}
-
-.copy-icon {
-  width: 1rem;
-  height: 1rem;
-  flex-shrink: 0;
-}
-
-.copy-text {
-  font-weight: var(--font-weight-medium);
-}
-
-button.copy.copy-ok {
-  background: var(--color-brand-success, #10b981) !important;
-  border-color: color-mix(in srgb, var(--color-brand-success, #10b981) 60%, transparent);
-  color: white;
-}
-
-.copy-ok .copy-text::after {
-  content: ' ✓';
-}
-
-button.copy.copy-fail {
-  background: #ef4444 !important;
-  border-color: color-mix(in srgb, #ef4444 60%, transparent);
-  color: white;
-}
-
-.copy-fail .copy-text::after {
-  content: ' ✗';
-}
-
-/* Toast notification system */
-.toast {
-  position: fixed;
-  top: var(--space-lg);
-  right: var(--space-lg);
-  z-index: var(--z-index-tooltip);
-  padding: var(--space-md) var(--space-lg);
-  border-radius: var(--radius-md);
-  font-family: system-ui, sans-serif;
-  font-weight: var(--font-weight-medium);
-  max-width: 300px;
-  box-shadow: var(--shadow-lg);
-  transition: var(--transition-transform), opacity var(--transition-base);
-  transform: translateX(100%);
-  opacity: 0;
-}
-
-.toast.toast-error {
-  background: #ef4444;
-  color: white;
-  border: 1px solid color-mix(in srgb, #ef4444 80%, transparent);
-}
-
-.toast.toast-success {
-  background: var(--color-brand-success);
-  color: white;
-  border: 1px solid color-mix(in srgb, var(--color-brand-success) 80%, transparent);
-}
-
-.toast:not([hidden]) {
-  transform: translateX(0);
-  opacity: 1;
-}
-
-/* Video play button states */
-.video-play-button {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: rgba(59, 130, 246, 0.9);
-  color: white;
-  border: none;
-  border-radius: var(--radius-md);
-  padding: var(--space-md) var(--space-lg);
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  transition: var(--transition-colors), var(--transition-transform);
-  z-index: 10;
-}
-
-.video-play-button:hover {
-  background: rgba(59, 130, 246, 1);
-  transform: translate(-50%, -50%) scale(1.05);
-}
-
-.video-play-button:active {
-  transform: translate(-50%, -50%) scale(0.95);
-}
-
-/* Video error fallback */
-.video-error-fallback {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 300px;
-  background-color: var(--color-bg-secondary);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border-subtle);
-}
-
-.video-error-fallback .fallback-link {
-  color: var(--color-brand-primary);
-  text-decoration: none;
-  font-weight: var(--font-weight-medium);
-  transition: var(--transition-colors);
-}
-
-.video-error-fallback .fallback-link:hover {
-  color: var(--color-interactive-hover);
-}
-
-
-
-/* CSP-compliant utility classes */
-.is-muted {
-  opacity: 0.5;
-}
-
-/* Copy helper textarea for CSP compliance */
-.copy-helper-textarea {
-  position: fixed;
-  top: -9999px;
-  left: -9999px;
-  opacity: 0;
-  pointer-events: none;
-  z-index: -1;
+  .step-header { page-break-after: avoid; }
+  .features { grid-template-columns: 1fr; }
 }
 
 /* ============================================================================
    UTILITY CLASSES
    ============================================================================ */
 
-/* Visibility utilities */
 .hidden { display: none; }
 
-/* Scrollbar utility */
 .scrollable {
   scrollbar-width: thin;
   scrollbar-color: var(--color-border-accent) transparent;
 }
 
-/* Scrollbar styles already consolidated above */
-
-/* ============================================================================
-   DARK MODE SPECIFIC STYLES
-   ============================================================================ */
-
-@media (prefers-color-scheme: dark) {
-  /* Enhanced dark mode styles */
-  body {
-    background-color: var(--color-bg-primary);
-    color: var(--color-text-primary);
-  }
+:is(.backdrop-blur-4, .backdrop-blur-5, .backdrop-blur-8, .backdrop-blur-10, .backdrop-blur-12) {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   
-  /* Ensure proper contrast in dark mode */
-  .code-block {
-    background-color: color-mix(in srgb, var(--color-bg-tertiary) 80%, black);
-  }
-}
-
-/* Chrome-specific fixes for video sizing issues */
-@supports not (aspect-ratio: 16 / 9) {
-  .showcase-video {
-    height: 0;
-    padding-bottom: 56.25%; /* 16:9 aspect ratio fallback */
-    position: relative;
-  }
-}
-
-/* Backdrop filter utility classes */
-.backdrop-blur-4 { 
-  backdrop-filter: blur(4px); 
-  -webkit-backdrop-filter: blur(4px); 
-}
-
-.backdrop-blur-5 { 
-  backdrop-filter: blur(5px); 
-  -webkit-backdrop-filter: blur(5px); 
-}
-
-.backdrop-blur-8 { 
-  backdrop-filter: blur(8px); 
-  -webkit-backdrop-filter: blur(8px); 
-}
-
-.backdrop-blur-10 { 
-  backdrop-filter: blur(10px); 
-  -webkit-backdrop-filter: blur(10px); 
-}
-
-.backdrop-blur-12 { 
-  backdrop-filter: blur(12px); 
-  -webkit-backdrop-filter: blur(12px); 
-}
-
-/* Backdrop filter support fallback */
-@supports not (backdrop-filter: blur(10px)) {
-  .backdrop-blur-4,
-  .backdrop-blur-5,
-  .backdrop-blur-8,
-  .backdrop-blur-10,
-  .backdrop-blur-12 {
-    background-color: rgba(0, 0, 0, 0.5);
+  @supports not (backdrop-filter: blur(10px)) {
+    background-color: color-mix(in srgb, black 50%, transparent);
   }
 }
 
 /* ============================================================================
-   PRELAUNCH WARNING OVERLAY (TEMPORARY)
-   ----------------------------------------------------------------------------
-   A glaring, static, red box centered on the page to indicate the site is not
-   ready for use. Remove the HTML block with class .prelaunch-warning to disable.
+   PRELAUNCH WARNING (TEMPORARY)
    ============================================================================ */
+
 .prelaunch-warning {
   position: fixed;
   inset-inline-start: 50%;
   inset-block-start: 50%;
   transform: translate(-50%, -50%);
-  z-index: 1100; /* Above progress bar, video overlays, and tooltips */
-
-  /* Visuals */
-  background: #ef4444; /* Tailwind Red-500 for strong contrast */
+  z-index: 1100;
+  background: #ef4444;
   color: #ffffff;
-  border: 3px solid #dc2626; /* Red-600 border */
+  border: 3px solid #dc2626;
   border-radius: var(--radius-lg);
-  box-shadow: 0 20px 40px rgba(0,0,0,0.45), 0 0 0 2px rgba(255,255,255,0.08);
-
-  /* Sizing and spacing */
-  padding: clamp(var(--space-lg), 2vw, var(--space-2xl)) clamp(var(--space-xl), 3vw, var(--space-3xl));
+  box-shadow: 0 20px 40px color-mix(in srgb, black 45%, transparent);
+  padding-block: clamp(var(--space-lg), 2vw, var(--space-2xl));
+  padding-inline: clamp(var(--space-xl), 3vw, var(--space-3xl));
   min-inline-size: 280px;
   max-inline-size: min(90vw, 900px);
   text-align: center;
-
-  /* Typography */
   font-weight: var(--font-weight-bold);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   font-size: clamp(var(--font-size-lg), 1.5vw + 0.9rem, var(--font-size-3xl));
   line-height: var(--line-height-tight);
-
-  /* Behavior */
-  pointer-events: none; /* Do not block page interactions */
+  pointer-events: none;
   user-select: none;
 }
-
-/* Hide warning when printing */
-@media print {
-  .prelaunch-warning { display: none !important; }
-}
-
