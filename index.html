@@ -3,7 +3,7 @@
   Fedora GNOME Installer Website - Minimal Setup Guide
   @author Cadric
   @description Progressive web application for Fedora GNOME installation
-  @version 2.1.2
+  @version 2.1.3
 -->
 <html class="no-js" lang="en">
 <head>
@@ -82,6 +82,11 @@
             <div class="hero-content">
                 <h1 id="hero-title" class="title">Install Fedora GNOME</h1>
                 <p class="subtitle">A minimal, elegant installation script</p>
+                
+                <!-- Scroll indicator target for cursor overlay -->
+                <button id="hero-scroll-target" class="scroll-indicator" aria-label="Scroll to start installation guide">
+                    <div class="scroll-arrow"></div>
+                </button>
             </div>
         </section>
 
@@ -105,7 +110,7 @@
                         aria-label="Demonstration of the Fedora GNOME installation process"
                         aria-busy="true"
                     >
-                        <source src="https://ifg.sh/assets/video/showcase-v1-h265.mp4" type="video/mp4; codecs=hevc">
+                        <source src="https://ifg.sh/assets/video/showcase-v1-h265.mp4" type="video/mp4; codecs=hvc1">
                         <source src="https://ifg.sh/assets/video/showcase-v1-1080p.mp4" type="video/mp4; codecs=avc1.42E01E">
                         <p>Your browser doesn't support video playback. <a href="https://ifg.sh/assets/video/showcase-v1-h265.mp4" target="_blank" rel="noopener noreferrer">View the installation demo video</a>.</p>
                     </video>

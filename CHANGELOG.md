@@ -12,12 +12,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [2.1.2] - 2025-09-02 - assets/css/style.css, assets/js/script.js
+## [2.1.3] - 2025-09-02 - CHANGELOG.md
+### Changed
+- Restructured CHANGELOG format to comply with instructions: each file edit gets its own version entry
+- Separated previously grouped file entries into individual version headers per file
 
+---
+
+## [2.1.3] - 2025-09-02 - index.html
+### Fixed
+- Added missing hero-scroll-target button element for JavaScript scroll functionality
+- Changed video codec from "hevc" to "hvc1" for RFC 6381 compliance and better browser support
+
+## [2.1.2] - 2025-09-02 - assets/css/style.css
 ### Added
 - Dynamic header spacing system with `--progress-offset` CSS variable
-- `updateProgressOffset()` JavaScript function for responsive header height calculation
-- ResizeObserver integration to watch for header size changes
 - Automatic content padding adjustment based on actual header height
 
 ### Fixed
@@ -30,43 +39,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Section containers adjusted to account for variable header size
 - Improved responsive behavior for different screen sizes and header configurations
 
-## [2.1.1] - 2025-09-02 - index.html, assets/css/style.css, assets/js/script.js
+## [2.1.2] - 2025-09-02 - assets/js/script.js
+### Added
+- `updateProgressOffset()` function for responsive header height calculation
+- ResizeObserver integration to watch for header size changes
 
+### Changed
+- Enhanced dynamic header spacing system integration
+- Improved responsive behavior for different screen sizes
+
+## [2.1.1] - 2025-09-02 - index.html
 ### Fixed
-- Skip link now properly visible on focus (removed conflicting sr-only class)
-- Removed duplicate `.hidden` CSS rules to reduce file size
-- No-js class removal now happens only after successful JavaScript initialization
 - Removed non-functional http-equiv meta headers that don't set real headers
 
 ### Added
 - Explicit security warning section about script safety with link to GitHub source
-- Enhanced video retry functionality with visual feedback and pulse animation
-- `aria-current="step"` support for collected steps navigation
-- Focus management on section transitions (auto-focuses step headers)
 - `rel="preconnect"` for video host to reduce latency
-- Browser compatibility documentation in CSS header (Chromium ≥84, Firefox ≥90, Safari ≥14.1)
-- `.sr-only:focus` override for proper accessibility
-- Enhanced error handling for video play failures with retry UX
-
-### Changed
-- Consolidated backdrop blur utilities using CSS custom properties for better maintainability
-- Improved collected steps ARIA state management
-- Enhanced progressive enhancement patterns
-- Updated debug console version display
 
 ### Security
 - Added prominent warning about never running unreviewed scripts
 - Maintained SHA-512 hash verification instructions
 - Added direct link to GitHub repository for source code review
 
-## [2.1.0] - 2025-09-02 - assets/css/style.css, assets/js/script.js
+## [2.1.1] - 2025-09-02 - assets/css/style.css
+### Fixed
+- Skip link now properly visible on focus (removed conflicting sr-only class)
+- Removed duplicate `.hidden` CSS rules to reduce file size
 
+### Added
+- Browser compatibility documentation in CSS header (Chromium ≥84, Firefox ≥90, Safari ≥14.1)
+- `.sr-only:focus` override for proper accessibility
+
+### Changed
+- Consolidated backdrop blur utilities using CSS custom properties for better maintainability
+
+## [2.1.1] - 2025-09-02 - assets/js/script.js
+### Fixed
+- No-js class removal now happens only after successful JavaScript initialization
+
+### Added
+- Enhanced video retry functionality with visual feedback and pulse animation
+- `aria-current="step"` support for collected steps navigation
+- Focus management on section transitions (auto-focuses step headers)
+- Enhanced error handling for video play failures with retry UX
+
+### Changed
+- Improved collected steps ARIA state management
+- Enhanced progressive enhancement patterns
+- Updated debug console version display
+
+## [2.1.0] - 2025-09-02 - assets/css/style.css
 ### Added
 - New CSS timing tokens: `--timing-transition`, `--timing-quick`, `--timing-highlight`, `--timing-copy-feedback`, `--timing-toast-duration`
 - Video control styles: `#play-pause-btn`, `.play-icon`, `.pause-icon`, `.hidden` utility class
 - Toast notification system with `.toast`, `.toast-error`, `.toast-success` classes
 - Complete backdrop-filter support for modern browsers
-- Progressive enhancement patterns with reduced-motion support
 
 ### Fixed
 - Hero background gradient syntax for proper grid pattern
@@ -78,19 +105,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved accessibility compliance for interactive elements
 - Optimized CSS organization with 20 structured sections
 
-## [2.0.0] - Previous Release - index.html, assets/css/style.css, assets/js/script.js
+## [2.1.0] - 2025-09-02 - assets/js/script.js
+### Added
+- Progressive enhancement patterns with reduced-motion support
 
+## [2.0.0] - Previous Release - index.html
+### Added
+- Initial modern web application structure
+
+## [2.0.0] - Previous Release - assets/css/style.css
 ### Added
 - Initial modern CSS architecture with custom properties
 - Dark theme implementation
 - Responsive design system
 - Modern CSS features (Grid, Flexbox, Custom Properties)
 
+## [2.0.0] - Previous Release - assets/js/script.js
+### Added
+- Initial JavaScript functionality with IIFE namespace
+
 ---
 
 ### Changelog Rules
 
-* Each file change gets its own entry with filename in the version header.
+* Each file edit gets its own entry with filename in the version header.
 * Use sections: **Added**, **Changed**, **Fixed**, **Removed**, **Deprecated**, **Security**.
 * Group multiple file edits in the same release under one version header.
 * Always include ISO date `YYYY-MM-DD`.
