@@ -14,6 +14,125 @@ Always use modern, cutting-edge technologies as described below for all code sug
 
 - Ensure compliance with WCAG 2.1 guidelines, meeting at least AA level, and aim for AAA compliance whenever feasible.
 
+Yes. Add this section and keep it near the top, after “General Requirements”.
+
+---
+
+## Versioning & File Annotations
+
+**Policy:** Semantic Versioning `MAJOR.MINOR.PATCH`. Always update any existing in-file version markers on every edit.
+
+**Marker format:** `@version X.Y.Z` in a top-of-file comment. Respect each file’s native comment syntax.
+
+**Where to update (when present):**
+
+* Header comments in source files: `.js`, `.ts`, `.css`, `.scss`, `.php`, `.py`, `.sh`, `.html`
+* Manifest files: `package.json`, `composer.json`, `pyproject.toml`, `setup.cfg`, `Cargo.toml`
+* Lockfiles are not edited directly.
+* Changelog: `CHANGELOG.md` (append under “Unreleased” or create it if it exists but is empty).
+
+**Do not introduce new version fields** unless the project already tracks them in that file type. If a file has multiple `@version` markers, update all matching the current module/file context.
+
+### How to choose the bump
+
+* **PATCH** (`X.Y.Z+1`) non-breaking fixes, micro style tweaks, internal refactors without API change, comments, CI, test-only edits.
+  Examples: add `box-shadow: var(--shadow-glow);`, fix typos, optimize query without changing outputs.
+* **MINOR** (`X.Y+1.0`) backwards-compatible features or additions to public surface.
+  Examples: new exported function, new optional param with a safe default, new CLI flag that is optional, new CSS tokens or utility classes that don’t rename or remove existing ones.
+* **MAJOR** (`X+1.0.0`) breaking changes.
+  Examples: remove/rename exported API, change function signature defaults, refactor that alters outputs, rename CSS classes or tokens, change HTTP contract, drop runtime or browser support.
+
+If uncertain, default to **PATCH**. If any breaking change is detected anywhere in the edit set, bump **MAJOR**.
+
+### How to update markers
+
+Update all encountered versions consistently in the same PR:
+
+* **Source headers** (examples):
+
+  * JavaScript/TypeScript
+
+    ```js
+    /**
+     * @version 2.1.1
+     */
+    ```
+  * CSS/SCSS
+
+    ```css
+    /* @version 2.1.1 */
+    ```
+  * PHP
+
+    ```php
+    /**
+     * @version 2.1.1
+     */
+    ```
+  * Bash
+
+    ```bash
+    # @version 2.1.1
+    ```
+  * Python
+
+    ```python
+    # @version 2.1.1
+    ```
+  * HTML
+
+    ```html
+    <!-- @version 2.1.1 -->
+    ```
+
+* **Manifests**
+
+  * `package.json`: update `"version": "2.1.1"` and keep sort/order intact.
+  * `composer.json`, `pyproject.toml`, `setup.cfg`, `Cargo.toml`: same rule.
+
+* **CHANGELOG.md** (keep to Keep-a-Changelog style when present):
+
+  ```
+  ## [2.1.1] - 2025-09-02
+  ### Changed
+  - Add `box-shadow: var(--shadow-glow);` to button focus state.
+  ```
+
+  Use **Added/Changed/Fixed/Removed/Deprecated/Security** sections as applicable.
+
+### Conventions for commits and PRs
+
+* Conventional Commits:
+
+  * `fix: …` triggers PATCH
+  * `feat: …` triggers MINOR
+  * `feat!: …` or `refactor!: …` or `perf!: …` triggers MAJOR
+* Release commit title:
+
+  * `chore(release): vX.Y.Z`
+* PR description must state:
+
+  * Chosen bump and rationale
+  * Touched files whose `@version` markers were updated
+  * Any breaking changes with upgrade notes
+
+### Copilot editing rules
+
+1. **Before edit:** read current version from nearest scope (file header first, then manifest).
+2. **After edit:** decide bump using rules above.
+3. **Apply version:** update all relevant markers and manifests in the diff.
+4. **Sync date:** if a changelog exists, add an entry with today’s date `YYYY-MM-DD`.
+5. **Avoid noise:** do not reformat unrelated files solely to touch `@version`.
+6. **Multi-package repos:** bump only the affected package(s). Do not cascade to others unless public API boundaries changed across packages.
+
+### Quick heuristics (examples)
+
+* Add CSS var or token, tweak spacing, aria attribute → **PATCH** `2.1.0 → 2.1.1`
+* Add new exported function or component, new CLI subcommand (non-breaking) → **MINOR** `2.1.0 → 2.2.0`
+* Rewrite module with API changes, rename public CSS class, remove option, change default behavior → **MAJOR** `2.1.0 → 3.0.0`
+
+---
+
 ## Browser Compatibility
 
 - Always use **feature detection** instead of browser detection (e.g., `if ('fetch' in window) {...}`).
