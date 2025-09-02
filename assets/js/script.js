@@ -2,7 +2,7 @@
  * Fedora GNOME Installer Website - Page Transitions & Interactions
  * @author Cadric
  * @description Modern ES2020+ implementation with progressive enhancement
- * @version 2.1.1
+ * @version 2.1.2
  * @requires Chromium ≥84, Firefox ≥90, Safari ≥14.1 (for private fields & optional chaining)
  */
 
@@ -24,7 +24,7 @@ const error = console.error.bind(console);
 
 if (DEBUG) {
     console.log('%c🐛 Debug Mode Enabled', 'background: #3b82f6; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;');
-    console.log('%c📦 Fedora Installer v2.1.1 - Enhanced Build', 'background: #10b981; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.9em;');
+    console.log('%c📦 Fedora Installer v2.1.2 - Enhanced Build', 'background: #10b981; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.9em;');
     console.log('Features: IIFE namespace, CSS caching, localStorage debug, idempotent init');
 }
 
@@ -1543,5 +1543,24 @@ root.FedoraApp = {
         return __uiInstance;
     }
 };
+
+/**
+ * Update progress offset CSS variable based on header height
+ */
+function updateProgressOffset() {
+    const header = document.querySelector('.progress-container');
+    const h = header ? Math.ceil(header.getBoundingClientRect().height) : 0;
+    document.documentElement.style.setProperty('--progress-offset', `${h}px`);
+}
+
+// Initialize progress offset handling
+addEventListener('load', updateProgressOffset);
+addEventListener('resize', updateProgressOffset);
+
+// Watch for header size changes
+const progressContainer = document.querySelector('.progress-container');
+if (progressContainer && 'ResizeObserver' in globalThis) {
+    new ResizeObserver(updateProgressOffset).observe(progressContainer);
+}
 
 })(typeof window !== 'undefined' ? window : this);

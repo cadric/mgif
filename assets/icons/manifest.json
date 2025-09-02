@@ -1,4 +1,5 @@
 {
+  "_comment": "Fedora GNOME Installer PWA Manifest - @version 2.1.2",
   "name": "Install Fedora GNOME - Minimal Setup Guide",
   "short_name": "Fedora GNOME Setup",
   "description": "A minimal, elegant Fedora GNOME installation script",

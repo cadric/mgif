@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 #
 # index.sh - Idempotent Fedora GNOME Workstation Setup
+# @author Cadric
+# @description Minimal, modern Fedora GNOME desktop configuration script
+# @version 2.1.2
+# @requires Bash 5.0+
 #
 # This script configures a minimal, modern Fedora GNOME desktop. It is designed
 # to be run with root privileges and is idempotent, meaning it can be run
@@ -9,7 +13,6 @@
 #
 # Copyright 2025 Cadric
 # License: MIT No Attribution
-# Requires: Bash 5.0+
 #
 
 set -Eeuo pipefail

@@ -1,11 +1,36 @@
-# Changelog
+# CHANGELOG
 
 All notable changes to this project will be documented in this file.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+This format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.1.1] - 2025-09-02
+---
+
+## [Unreleased]
+
+* Pending changes not yet released
+
+---
+
+## [2.1.2] - 2025-09-02 - assets/css/style.css, assets/js/script.js
+
+### Added
+- Dynamic header spacing system with `--progress-offset` CSS variable
+- `updateProgressOffset()` JavaScript function for responsive header height calculation
+- ResizeObserver integration to watch for header size changes
+- Automatic content padding adjustment based on actual header height
+
+### Fixed
+- Hero section content no longer hidden behind fixed progress header
+- Section content properly spaced below dynamic header
+- Layout adapts automatically to header height changes on resize
+
+### Changed
+- Hero section now uses dynamic padding based on header height
+- Section containers adjusted to account for variable header size
+- Improved responsive behavior for different screen sizes and header configurations
+
+## [2.1.1] - 2025-09-02 - index.html, assets/css/style.css, assets/js/script.js
 
 ### Fixed
 - Skip link now properly visible on focus (removed conflicting sr-only class)
@@ -34,7 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Maintained SHA-512 hash verification instructions
 - Added direct link to GitHub repository for source code review
 
-## [2.1.0] - 2025-09-02
+## [2.1.0] - 2025-09-02 - assets/css/style.css, assets/js/script.js
 
 ### Added
 - New CSS timing tokens: `--timing-transition`, `--timing-quick`, `--timing-highlight`, `--timing-copy-feedback`, `--timing-toast-duration`
@@ -53,8 +78,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved accessibility compliance for interactive elements
 - Optimized CSS organization with 20 structured sections
 
-## [2.0.0] - Previous Release
+## [2.0.0] - Previous Release - index.html, assets/css/style.css, assets/js/script.js
+
+### Added
 - Initial modern CSS architecture with custom properties
 - Dark theme implementation
 - Responsive design system
 - Modern CSS features (Grid, Flexbox, Custom Properties)
+
+---
+
+### Changelog Rules
+
+* Each file change gets its own entry with filename in the version header.
+* Use sections: **Added**, **Changed**, **Fixed**, **Removed**, **Deprecated**, **Security**.
+* Group multiple file edits in the same release under one version header.
+* Always include ISO date `YYYY-MM-DD`.
