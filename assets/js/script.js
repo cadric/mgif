@@ -2,7 +2,7 @@
  * Fedora GNOME Installer Website - Page Transitions & Interactions
  * @author Cadric
  * @description Modern ES2020+ implementation with progressive enhancement
- * @version 2.1.0
+ * @version 2.1.1
  * @requires Chromium ≥84, Firefox ≥90, Safari ≥14.1 (for private fields & optional chaining)
  */
 
@@ -24,7 +24,7 @@ const error = console.error.bind(console);
 
 if (DEBUG) {
     console.log('%c🐛 Debug Mode Enabled', 'background: #3b82f6; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;');
-    console.log('%c📦 Fedora Installer v2.1.0 - Enhanced Build', 'background: #10b981; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.9em;');
+    console.log('%c📦 Fedora Installer v2.1.1 - Enhanced Build', 'background: #10b981; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.9em;');
     console.log('Features: IIFE namespace, CSS caching, localStorage debug, idempotent init');
 }
 
@@ -478,14 +478,25 @@ class FedoraInstallerUI {
         }
 
         this.#updateHistory(sectionIndex);
+        this.#updateCollectedStepsAria(sectionIndex);
 
         setTimeout(() => {
             if (sectionIndex === -1) {
                 this.#hero.classList.add('visible');
+                // Focus management for hero section
+                const heroTitle = document.getElementById('hero-title');
+                heroTitle?.focus();
             } else {
                 const targetSection = this.#sections[sectionIndex];
                 if (targetSection) {
                     targetSection.classList.add('visible', 'active');
+                    
+                    // Focus management: move focus to step header
+                    const stepHeader = targetSection.querySelector('h2');
+                    if (stepHeader) {
+                        stepHeader.setAttribute('tabindex', '-1');
+                        stepHeader.focus();
+                    }
                     
                     const stepId = targetSection.getAttribute('data-step');
                     if (stepId && this.#stepTitles[stepId]) {
@@ -668,6 +679,25 @@ class FedoraInstallerUI {
     }
 
     /**
+     * Update aria-current attributes for collected steps
+     */
+    #updateCollectedStepsAria(currentSectionIndex) {
+        try {
+            const allSteps = this.#collectedSteps.querySelectorAll('.collected-step');
+            allSteps.forEach(step => {
+                const stepIndex = parseInt(step.dataset.stepIndex);
+                if (stepIndex === currentSectionIndex) {
+                    step.setAttribute('aria-current', 'step');
+                } else {
+                    step.removeAttribute('aria-current');
+                }
+            });
+        } catch (err) {
+            error('Failed to update collected steps aria attributes:', err);
+        }
+    }
+
+    /**
      * Highlight element with visual feedback
      */
     #highlightElement(element) {
@@ -789,7 +819,7 @@ class FedoraInstallerUI {
                     playOverlay.classList.add('hidden');
                 } catch (error) {
                     console.log('Play failed:', error.name);
-                    this.#handleVideoPlayError(error);
+                    this.#handleVideoPlayError(error, video, overlayBtn);
                 }
             });
         }
@@ -936,9 +966,37 @@ class FedoraInstallerUI {
     /**
      * Handle video play errors consistently
      */
-    #handleVideoPlayError(error) {
+    #handleVideoPlayError(error, video = null, retryButton = null) {
         warn('Video play failed:', error.name, error.message);
-        showErrorToast('Failed to play video. Please try again.');
+        
+        if (retryButton && video) {
+            // Add retry functionality to the button
+            this.#addRetryToVideoButton(retryButton, video);
+        } else {
+            showErrorToast('Failed to play video. Please try again.');
+        }
+    }
+
+    /**
+     * Add retry functionality to video button after play failure
+     */
+    #addRetryToVideoButton(button, video) {
+        const originalText = button.querySelector('.play-overlay-text')?.textContent || 'Play Video';
+        const textElement = button.querySelector('.play-overlay-text');
+        
+        if (textElement) {
+            textElement.textContent = 'Retry Video';
+        }
+        
+        button.classList.add('retry-state');
+        
+        // Reset after a delay
+        setTimeout(() => {
+            if (textElement) {
+                textElement.textContent = originalText;
+            }
+            button.classList.remove('retry-state');
+        }, 3000);
     }
 
     /**
@@ -1298,6 +1356,9 @@ const initializeProgressiveEnhancements = () => {
         // Setup progressive enhancement features
         setupCopyButtons();
         setupSmoothScrolling();
+        
+        // Remove no-js class only after successful initialization
+        document.documentElement.classList.remove('no-js');
         
         return __uiInstance;
         

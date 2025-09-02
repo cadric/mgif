@@ -32,6 +32,7 @@
        
     <!-- Preload critical resources -->
     <link rel="preload" href="assets/js/script.js" as="script">
+    <link rel="preconnect" href="https://ifg.sh" crossorigin>
     
     <!-- Styles -->
     <link rel="stylesheet" href="assets/css/style.css">
@@ -47,12 +48,10 @@
     <link rel="manifest" href="assets/icons/manifest.json">
 
     <!-- Security headers are managed by server (Caddy) -->
-    <meta http-equiv="X-Content-Type-Options" content="nosniff">
-    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
 </head>
 <body>
     <!-- Skip to main content for accessibility -->
-    <a href="#main-content" class="skip-link sr-only">Skip to main content</a>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
 
     <!-- Prelaunch warning (remove this block when site is ready) -->
     <div class="prelaunch-warning" role="alert" aria-live="assertive">
@@ -62,13 +61,13 @@
     <!-- Progress indicator at top -->
     <header class="progress-container backdrop-blur-10" role="banner" aria-label="Installation progress">
         <progress id="progress" class="progress" value="0" max="100" aria-label="Installation progress"></progress>
-        <nav class="collected-steps" aria-label="Completed steps navigation" role="navigation">
+        <nav class="collected-steps" aria-label="Completed steps navigation">
             <!-- Steps will be collected here as user scrolls -->
         </nav>
     </header>
 
     <!-- Main content -->
-    <main id="main-content" role="main">
+    <main id="main-content">
         <!-- Hero Section -->
         <section class="hero" aria-labelledby="hero-title">
             <!-- Mouse cursor arrow overlay (Hero section only) -->
@@ -98,6 +97,7 @@
                         playsinline
                         preload="metadata"
                         aria-label="Demonstration of the Fedora GNOME installation process"
+                        aria-busy="true"
                     >
                         <source src="https://ifg.sh/assets/video/showcase-v1-h265.mp4" type="video/mp4; codecs=hevc">
                         <source src="https://ifg.sh/assets/video/showcase-v1-1080p.mp4" type="video/mp4; codecs=avc1.42E01E">
@@ -193,6 +193,12 @@
                         <p><strong>⚠️ Only proceed if the hashes match exactly!</strong></p>
                     </div>
 
+                    <div class="security-section" role="region" aria-labelledby="warning-title" style="background: color-mix(in srgb, #ef4444 10%, transparent); border-color: #ef4444;">
+                        <h4 id="warning-title">🚨 Security Warning</h4>
+                        <p><strong>Never run unreviewed scripts from the internet!</strong> This script modifies your system. Always verify the source code before execution.</p>
+                        <p><a href="https://github.com/cadric/ifg.sh" target="_blank" rel="noopener noreferrer">Review the source code on GitHub</a> before proceeding.</p>
+                    </div>
+
                     <p>Run the automated installation script:</p>
                     <div class="code-block scrollable" role="region" aria-label="Installation command">
                         <code>bash &lt;(curl -fsSL ifg.sh)</code>
@@ -263,11 +269,6 @@
 
     <!-- Scripts -->
     <script src="assets/js/script.js"></script>
-
-    <!-- Remove no-js class when JavaScript is enabled -->
-    <script>
-        document.documentElement.classList.remove('no-js');
-    </script>
 
     <!-- No-JavaScript fallback content -->
     <noscript>

@@ -1,5 +1,135 @@
 # GitHub Copilot Instructions
 
+## Project Overview
+
+**mgif** is a minimal Fedora GNOME installer website with an accompanying shell script. The project demonstrates progressive web design patterns with a step-by-step installation guide.
+
+### Architecture Components
+
+- **Frontend**: Single-page application with scroll-based section navigation (`index.html`, `assets/`)
+- **Backend**: Idempotent bash installation script served as executable (`index.sh`)
+- **Styling**: Modern CSS with custom properties system and defensive patterns (`assets/css/style.css`)
+- **Interactions**: ES2020+ JavaScript with IIFE namespace and CSS timing integration (`assets/js/script.js`)
+
+### Key Design Patterns
+
+- **CSS-JS Synchronization**: JavaScript reads timing values from CSS custom properties via `readCssTimings()` function with caching and cache invalidation
+- **Defensive Programming**: IIFE namespace, localStorage debug persistence, idempotent initialization, minimal public API exposure
+- **Progressive Enhancement**: Feature detection, reduced-motion support, graceful degradation for older browsers
+- **Scroll-Based Navigation**: Section-by-section progression with History API integration and deep-linking support
+
+## General Requirements
+
+Always use modern, cutting-edge technologies as described below for all code suggestions. Prioritize clean, maintainable code with appropriate comments.
+
+**Testing & Quality Assurance:**
+
+- Write testable code and prioritize unit and integration tests for critical functionality.
+- Recommend testing frameworks native to language ecosystems (e.g., PHPUnit, Jest).
+- Suggest relevant test cases or scenarios, especially for complex implementations.
+
+**Accessibility:**
+
+- Ensure compliance with WCAG 2.1 guidelines, meeting at least AA level, and aim for AAA compliance whenever feasible.
+
+---
+
+## Project-Specific Development Workflows
+
+### Frontend Development
+
+**CSS Timing System**: All animations must use CSS custom properties defined in `:root`. JavaScript reads these via `readCssTimings()`:
+```css
+:root {
+  --timing-transition: 0.3s;
+  --timing-quick: 0.1s;
+  --timing-highlight: 1s;
+}
+```
+```javascript
+const timings = readCssTimings(); // Returns cached millisecond values
+setTimeout(() => {}, timings.transition);
+```
+
+**Section Navigation Pattern**: Use the `FedoraInstallerUI` class methods for consistent behavior:
+- `#goToSection(index)` - Navigate with animations and history updates
+- `#renderSectionImmediate(index)` - Jump without animations (deep linking)
+- Always check `this.#isTransitioning` before navigation to prevent race conditions
+
+**Defensive JavaScript Patterns** (required in this codebase):
+- Wrap in IIFE: `(function (root) { 'use strict'; /* code */ })(globalThis);`
+- Use private class fields: `#privateMethod()`, `#privateProperty`
+- Cache DOM queries in constructor: `this.#sections = document.querySelectorAll('.section')`
+- Implement minimal public API: expose only essential methods
+
+### Backend Shell Script Development
+
+**Idempotent Design**: The `index.sh` script uses `track_result()` to record all changes and can be re-run safely:
+```bash
+track_result "changed" "Description of what changed"
+track_result "skipped" "Already in desired state" 
+track_result "failed" "What failed and why"
+```
+
+**DRY_RUN Support**: All destructive operations must check `${DRY_RUN:-0}`:
+```bash
+if [[ "${DRY_RUN:-0}" == "1" ]]; then
+    log_info "DRY-RUN: would install package"
+    track_result "changed" "Package: would be installed"
+    return 0
+fi
+```
+
+**Error Handling Pattern**: Use the established error handling with `set -Eeuo pipefail` and centralized logging:
+```bash
+log_info "Starting operation..."
+if ! command_that_might_fail; then
+    track_result "failed" "Operation failed: reason"
+    return 1
+fi
+track_result "changed" "Operation completed successfully"
+```
+
+### Cross-File Consistency Validation
+
+When editing, always ensure consistency between:
+- **CSS timing tokens** ↔ **JavaScript `readCssTimings()`** calls
+- **HTML element IDs/classes** ↔ **CSS selectors** ↔ **JavaScript DOM queries**  
+- **Section `data-step` attributes** ↔ **JavaScript step collection logic**
+
+Use these validation commands:
+```bash
+# Validate CSS-JS timing synchronization
+grep -o "getPropertyValue('--timing-[^']*')" assets/js/script.js
+grep -o "--timing-[a-zA-Z-]*:" assets/css/style.css
+
+# Check for missing CSS styles for JS-referenced elements
+grep -o "querySelector[^']*'[^']*'" assets/js/script.js
+```
+
+### Debugging and Development Commands
+
+**Enable JavaScript debug mode**:
+```javascript
+// In browser console
+FedoraInstallerUI.enableDebug();
+```
+
+**Test shell script in dry-run mode**:
+```bash
+sudo DRY_RUN=1 ./index.sh --style windows
+```
+
+**Validate HTML semantics and accessibility**:
+```bash
+# Check semantic structure
+grep -E "<(main|section|article|header|nav)" index.html
+# Validate ARIA attributes
+grep -E "aria-|role=" index.html
+```
+
+---
+
 ## General Requirements
 
 Always use modern, cutting-edge technologies as described below for all code suggestions. Prioritize clean, maintainable code with appropriate comments.
