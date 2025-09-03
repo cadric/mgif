@@ -2,7 +2,7 @@
  * Fedora GNOME Installer Website Styles - Optimized & Modernized
  * @author Cadric
  * @description Ultra-modern, accessible dark theme with latest CSS features
- * @version 2.2.0
+ * @version 2.3.1
  * @requires Chrome ≥113, Firefox ≥117, Safari ≥16.5 (CSS nesting, color-mix, dvh support)
  */
 
@@ -133,6 +133,11 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+  
+  .triangle,
+  .line {
+    animation: none !important;
   }
 }
 
@@ -549,7 +554,6 @@ body {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   color: var(--color-text-accent);
-  margin-block-end: var(--space-lg);
   animation: fadeInUp var(--animation-duration-entrance) ease 0.2s both;
   text-rendering: optimizeLegibility;
   
@@ -557,6 +561,14 @@ body {
     background: none;
     color: var(--color-text-accent);
   }
+}
+
+.hero-title-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-lg);
+  flex-wrap: nowrap;
 }
 
 .subtitle {
@@ -732,6 +744,76 @@ body {
 @keyframes blinkTextCursor {
   from { border-right-color: rgba(255,255,255,.75); }
   to { border-right-color: transparent; }
+}
+
+@keyframes buzz {
+  70% { opacity: 0.80; }
+}
+
+@keyframes blink {
+  40% { opacity: 1; }
+  42% { opacity: 0.8; }
+  43% { opacity: 1; }
+  45% { opacity: 0.2; }
+  46% { opacity: 1; }
+}
+
+/* ============================================================================
+   LOGO COMPONENT
+   ============================================================================ */
+
+.logo {
+  --size: 80px;
+  position: relative;
+  width: var(--size);
+  aspect-ratio: 1 / 1;
+  flex-shrink: 0;
+}
+
+/* triangle  */
+.triangle {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  filter:
+    drop-shadow(0 0 10px color-mix(in srgb, var(--color-brand-primary) 70%, transparent))
+    drop-shadow(0 0 20px color-mix(in srgb, var(--color-brand-primary) 60%, transparent))
+    drop-shadow(0 0 40px color-mix(in srgb, var(--color-brand-primary) 50%, transparent))
+    drop-shadow(0 0 100px color-mix(in srgb, var(--color-brand-primary) 45%, transparent))
+    drop-shadow(0 0 200px color-mix(in srgb, var(--color-brand-primary) 40%, transparent))
+    drop-shadow(0 0 300px color-mix(in srgb, var(--color-brand-primary) 35%, transparent));
+  animation: blink 4s infinite alternate;
+}
+
+.triangle::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--color-brand-primary);
+  clip-path: polygon(34.375% 28.125%, 65.625% 50%, 34.375% 71.875%);
+}
+
+/* line */
+.line {
+  position: absolute;
+  left: 34.375%;
+  top: 71.875%;
+  width: 31.25%;
+  height: 6.25%;
+  background: var(--color-brand-secondary);
+  border-radius: calc(var(--size) * 0.03125);
+  filter:
+    drop-shadow(0 0 10px color-mix(in srgb, var(--color-brand-secondary) 70%, transparent))
+    drop-shadow(0 0 20px color-mix(in srgb, var(--color-brand-secondary) 60%, transparent))
+    drop-shadow(0 0 40px color-mix(in srgb, var(--color-brand-secondary) 55%, transparent))
+    drop-shadow(0 0 100px color-mix(in srgb, var(--color-brand-secondary) 50%, transparent))
+    drop-shadow(0 0 200px color-mix(in srgb, var(--color-brand-secondary) 45%, transparent))
+    drop-shadow(0 0 300px color-mix(in srgb, var(--color-brand-secondary) 40%, transparent));
+  animation: blink 10.6s infinite ease-in-out;
+  will-change: filter, opacity;
 }
 
 /* ============================================================================
@@ -1739,4 +1821,24 @@ main:has(#step-5.visible) + .footer {
   line-height: var(--line-height-tight);
   pointer-events: none;
   user-select: none;
+}
+
+/* ---- GNOME inline logo ---- */
+.title { display: grid; justify-items: center; gap: .2em; }
+
+/* GNOME-linje med logo til højre */
+.title .row { display: block; }
+.title .row--gnome {
+  display: inline-flex;
+  align-items: baseline;
+}
+
+/* Logo skaleret til præcis cap-højde for symbolet (triangel+streg) */
+.logo--inline {
+  --size: 2cap;           /* 2× fordi symbolet fylder ~50% af boksen */
+  inline-size: 2cap;
+  aspect-ratio: 1 / 1;
+  position: relative;
+  display: inline-block;
+  translate: 0 .45cap;     /* finjustér 0–.1cap efter behov */
 }

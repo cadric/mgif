@@ -3,7 +3,7 @@
   Fedora GNOME Installer Website - Minimal Setup Guide
   @author Cadric
   @description Progressive web application for Fedora GNOME installation
-  @version 2.2.0
+  @version 2.3.1
 -->
 <html class="no-js" lang="en">
 <head>
@@ -60,9 +60,7 @@
     <a href="#main-content" class="skip-link">Skip to main content</a>
 
     <!-- Prelaunch warning (remove this block when site is ready) -->
-    <div class="prelaunch-warning" role="alert" aria-live="assertive">
-        NOT READY FOR USE - PROCEED WITH CARE
-    </div>
+
 
     <!-- Progress indicator at top -->
     <header class="progress-container backdrop-blur-10" role="banner" aria-label="Installation progress">
@@ -80,7 +78,18 @@
             <canvas id="hero-cursor-overlay" class="hero-cursor-overlay" aria-hidden="true"></canvas>
             
             <div class="hero-content">
-                <h1 id="hero-title" class="title">Install Fedora GNOME</h1>
+                <div class="hero-title-container">
+                    <h1 id="hero-title" class="title">
+                        <span class="row">Install Fedora</span>
+                        <span class="row row--gnome">
+                            GNOME
+                            <span class="logo logo--inline" aria-hidden="true">
+                                <span class="triangle"></span>
+                                <span class="line"></span>
+                            </span>
+                        </span>
+                    </h1>
+                </div>
                 <p class="subtitle anim-typewriter">A minimal, elegant installation script</p>
                 
                 <!-- Scroll indicator target for cursor overlay -->

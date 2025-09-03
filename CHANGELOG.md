@@ -8,6 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.1] - 2025-09-03 - index.html, style.css
+### Changed
+- Moved logo inline with "GNOME" text in hero title
+- Added inline logo variant that scales with text font-size (1em)
+- Disabled glow and animation effects for inline logo variant
+- Updated hero title structure to use rows with flexible layout
+
+## [2.3.0] - 2025-09-03 - style.css, index.html
+### Added
+- Animated logo component with triangle and line elements
+- Custom CSS animations (blink, buzz) for logo interactivity
+- Glowing effects with multiple drop-shadows
+- Reduced motion support for logo animations
+- Logo positioned inline with main title
+
 ## [2.2.0] - 2025-09-03 - style.css, index.html
 ### Added
 - Typewriter animation effect for subtitle element
