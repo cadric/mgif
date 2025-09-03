@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.5] - 2025-09-03 - style.css, script.js
+### Added
+- Electric pulse animation system for hero grid background
+- `--color-brand-danger` and `--color-brand-danger-dark` to Color System
+- `.pulse-line` CSS classes with GPU-optimized animations
+- Electric pulse JavaScript module with performance limitations and lifecycle management
+
+### Changed
+- Updated all hardcoded `#ef4444` color references to use `--color-brand-danger` custom property
+- Hero section now supports electric pulse overlay effects
+- Added `overflow: hidden` to hero section for pulse containment
+
 ## [2.1.4] - 2025-09-03 - style.css, script.js, index.html
 ### Changed
 - Updated browser compatibility requirements to Chrome ≥113, Firefox ≥117, Safari ≥16.5 for CSS nesting support

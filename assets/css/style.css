@@ -2,7 +2,7 @@
  * Fedora GNOME Installer Website Styles - Optimized & Modernized
  * @author Cadric
  * @description Ultra-modern, accessible dark theme with latest CSS features
- * @version 2.1.4
+ * @version 2.1.5
  * @requires Chrome ≥113, Firefox ≥117, Safari ≥16.5 (CSS nesting, color-mix, dvh support)
  */
 
@@ -448,10 +448,10 @@ body {
   background-color: var(--color-bg-primary);
   background-image: 
     linear-gradient(0deg, 
-      color-mix(in srgb, var(--color-brand-primary) 8%, transparent) 0%,
+      color-mix(in srgb, var(--color-brand-primary) 12%, transparent) 0%,
       transparent 1px, transparent 50px),
     linear-gradient(90deg, 
-      color-mix(in srgb, var(--color-brand-primary) 8%, transparent) 0%,
+      color-mix(in srgb, var(--color-brand-primary) 12%, transparent) 0%,
       transparent 1px, transparent 50px);
   background-size: 50px 50px;
   z-index: 1;
@@ -463,6 +463,8 @@ body {
     transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94),
     visibility 0.8s step-end;
   padding-block-start: var(--progress-offset);
+  overflow: hidden;
+  --pulse-color: color-mix(in srgb, var(--color-brand-primary), white 35%);
     
   &.visible {
     z-index: 10;
@@ -473,6 +475,35 @@ body {
       opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94),
       transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94),
       visibility 0.8s step-start;
+  }
+}
+
+/* Electric pulse lines for hero grid */
+.hero .pulse-line {
+  position: absolute;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, currentColor, transparent);
+  color: var(--pulse-color);
+  opacity: 0;
+  filter: drop-shadow(0 0 3px currentColor) drop-shadow(0 0 8px currentColor);
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  z-index: 2;
+}
+
+.hero .pulse-line.h {
+  block-size: 1px;
+}
+
+.hero .pulse-line.v {
+  inline-size: 1px;
+  background: linear-gradient(180deg, transparent, currentColor, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero .pulse-line {
+    animation: none !important;
+    display: none !important;
   }
 }
 

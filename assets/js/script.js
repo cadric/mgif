@@ -2,7 +2,7 @@
  * Fedora GNOME Installer Website - Page Transitions & Interactions
  * @author Cadric
  * @description Modern ES2020+ implementation with progressive enhancement
- * @version 2.1.4
+ * @version 2.1.5
  * @requires Chrome ≥113, Firefox ≥117, Safari ≥16.5 (for CSS nesting compatibility)
  */
 
@@ -24,8 +24,8 @@ const error = console.error.bind(console);
 
     if (DEBUG) {
         console.log('%c🐛 Debug Mode Enabled', 'background: #3b82f6; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;');
-        console.log('%c📦 Fedora Installer v2.1.4 - Enhanced Build', 'background: #10b981; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.9em;');
-        console.log('Features: IIFE namespace, CSS caching, localStorage debug, idempotent init');
+        console.log('%c📦 Fedora Installer v2.1.5 - Enhanced Build', 'background: #10b981; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.9em;');
+        console.log('Features: IIFE namespace, CSS caching, localStorage debug, idempotent init, electric pulses');
     }// Cached CSS timings with invalidation
 let __timingsCache = null;
 let __cacheKey = '';
@@ -1581,5 +1581,140 @@ const progressContainer = document.querySelector('.progress-container');
 if (progressContainer && 'ResizeObserver' in globalThis) {
     new ResizeObserver(updateProgressOffset).observe(progressContainer);
 }
+
+/**
+ * Electric pulse animation for hero grid
+ */
+(function initElectricPulses() {
+    const GRID = 50;                 // skal matche background-size
+    const MAX_CONCURRENT = 8;        // hard cap for performance
+    const MIN_INTERVAL = 400;        // ms (øget fra 250)
+    const MAX_INTERVAL = 1400;       // ms (øget fra 900)
+    const MIN_LEN = 60;              // px (reduceret fra 80)
+    const MAX_LEN = 350;             // px (øget fra 220)
+    const SPEED_PX_PER_MS = 0.35;    // reduceret fra 0.6 for langsommere animation
+
+    const hero = document.querySelector('.hero');
+    if (!hero) return;
+
+    let active = 0;
+    let isActive = false;
+
+    const rect = () => hero.getBoundingClientRect();
+    const snap = v => Math.round(v / GRID) * GRID;
+
+    function spawnPulse() {
+        if (!isActive || active >= MAX_CONCURRENT) return scheduleNext();
+
+        const r = rect();
+        const horizontal = Math.random() < 0.5;
+
+        // Vælg længde og position
+        const len = Math.round(MIN_LEN + Math.random() * (MAX_LEN - MIN_LEN));
+        const el = document.createElement('div');
+        el.className = 'pulse-line ' + (horizontal ? 'h' : 'v');
+
+        if (horizontal) {
+            const y = snap(Math.random() * r.height);
+            const x = Math.max(0, Math.min(r.width - len, snap(Math.random() * r.width) - len/2));
+            el.style.inlineSize = `${len}px`;
+            el.style.insetInlineStart = `${x}px`;
+            el.style.insetBlockStart = `${y}px`;
+            // lille "løb" langs linjen
+            const drift = (Math.random() * 2 - 1) * GRID * 0.5;
+            el.animate(
+                [
+                    { transform: `translateX(${drift}px)`, opacity: 0 },
+                    { transform: `translateX(0px)`,       opacity: 0.9, offset: 0.12 },
+                    { transform: `translateX(${-drift}px)`,opacity: 0.4, offset: 0.5 },
+                    { transform: `translateX(${drift}px)`, opacity: 0 }
+                ],
+                { duration: Math.max(200, len / SPEED_PX_PER_MS), easing: 'linear' }
+            ).addEventListener('finish', () => { 
+                if (hero.contains(el)) {
+                    hero.removeChild(el); 
+                }
+                active--; 
+            });
+        } else {
+            const x = snap(Math.random() * r.width);
+            const y = Math.max(0, Math.min(r.height - len, snap(Math.random() * r.height) - len/2));
+            el.style.blockSize = `${len}px`;
+            el.style.insetInlineStart = `${x}px`;
+            el.style.insetBlockStart = `${y}px`;
+            const drift = (Math.random() * 2 - 1) * GRID * 0.5;
+            el.animate(
+                [
+                    { transform: `translateY(${drift}px)`, opacity: 0 },
+                    { transform: `translateY(0px)`,        opacity: 0.9, offset: 0.12 },
+                    { transform: `translateY(${-drift}px)`,opacity: 0.4, offset: 0.5 },
+                    { transform: `translateY(${drift}px)`, opacity: 0 }
+                ],
+                { duration: Math.max(200, len / SPEED_PX_PER_MS), easing: 'linear' }
+            ).addEventListener('finish', () => { 
+                if (hero.contains(el)) {
+                    hero.removeChild(el); 
+                }
+                active--; 
+            });
+        }
+
+        hero.appendChild(el);
+        active++;
+        scheduleNext();
+    }
+
+    function scheduleNext() {
+        if (!isActive) return;
+        
+        const t = MIN_INTERVAL + Math.random() * (MAX_INTERVAL - MIN_INTERVAL);
+        setTimeout(() => {
+            // batch i rAF for mindre layout-jitter
+            requestAnimationFrame(spawnPulse);
+        }, t);
+    }
+
+    function startPulses() {
+        if (hero.classList.contains('visible') && !isActive) {
+            isActive = true;
+            scheduleNext();
+        }
+    }
+
+    function stopPulses() {
+        isActive = false;
+    }
+
+    // Observer for hero visibility changes
+    const heroObserver = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                if (hero.classList.contains('visible')) {
+                    startPulses();
+                } else {
+                    stopPulses();
+                }
+            }
+        });
+    });
+
+    heroObserver.observe(hero, { attributes: true, attributeFilter: ['class'] });
+
+    // Start hvis hero allerede er synlig
+    if (hero.classList.contains('visible')) {
+        startPulses();
+    }
+
+    // Stop ved visibility change
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+            stopPulses();
+        } else if (hero.classList.contains('visible')) {
+            startPulses();
+        }
+    });
+
+    log('Electric pulse animation initialized');
+})();
 
 })(typeof window !== 'undefined' ? window : this);
