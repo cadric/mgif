@@ -2,7 +2,7 @@
  * Fedora GNOME Installer Website - Page Transitions & Interactions
  * @author Cadric
  * @description Modern ES2020+ implementation with progressive enhancement
- * @version 2.1.6
+ * @version 2.1.7
  * @requires Chrome ≥113, Firefox ≥117, Safari ≥16.5 (for CSS nesting compatibility)
  */
 
@@ -1374,7 +1374,6 @@ const initializeProgressiveEnhancements = () => {
         
         // Setup progressive enhancement features
         setupCopyButtons();
-        setupSmoothScrolling();
         
         // Remove no-js class only after successful initialization
         document.documentElement.classList.remove('no-js');
@@ -1424,41 +1423,6 @@ const setupCopyButtons = () => {
             fallbackCopyText(text, btn);
         });
     });
-};
-
-/**
- * Setup smooth scrolling for anchor links
- */
-const setupSmoothScrolling = () => {
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', (e) => {
-            const targetId = anchor.getAttribute('href').slice(1);
-            const targetElement = targetId ? document.getElementById(targetId) : null;
-            
-            if (targetElement) {
-                e.preventDefault();
-                
-                const smoothOK = !matchMedia('(prefers-reduced-motion: reduce)').matches;
-                
-                const priorTabindex = targetElement.getAttribute('tabindex');
-                targetElement.setAttribute('tabindex', '-1');
-                
-                targetElement.focus({ preventScroll: true });
-                targetElement.scrollIntoView({ 
-                    behavior: smoothOK ? 'smooth' : 'auto', 
-                    block: 'start' 
-                });
-                
-                if (priorTabindex === null) {
-                    targetElement.removeAttribute('tabindex');
-                } else {
-                    targetElement.setAttribute('tabindex', priorTabindex);
-                }
-            }
-        });
-    });
-    
-    log('Progressive enhancement features initialized');
 };
 
 /**
@@ -1528,14 +1492,26 @@ const showErrorToast = (message) => {
         document.body.appendChild(toast);
     }
     
+    // Reset any existing animation
+    toast.classList.remove('toast-animate');
     toast.textContent = message;
     toast.classList.remove('toast-success');
     toast.classList.add('toast-error');
     toast.removeAttribute('hidden');
     
-    setTimeout(() => {
+    // Start CSS animation lifecycle
+    requestAnimationFrame(() => {
+        toast.classList.add('toast-animate');
+    });
+    
+    // Listen for animation end to hide toast
+    const handleAnimationEnd = () => {
         toast.setAttribute('hidden', '');
-    }, readCssTimings().toastDuration);
+        toast.classList.remove('toast-animate');
+        toast.removeEventListener('animationend', handleAnimationEnd);
+    };
+    
+    toast.addEventListener('animationend', handleAnimationEnd, { once: true });
 };
 
 // Expose minimal public API and close IIFE

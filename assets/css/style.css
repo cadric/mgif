@@ -2,7 +2,7 @@
  * Fedora GNOME Installer Website Styles - Optimized & Modernized
  * @author Cadric
  * @description Ultra-modern, accessible dark theme with latest CSS features
- * @version 2.3.3
+ * @version 2.3.4
  * @requires Chrome ≥113, Firefox ≥117, Safari ≥16.5 (CSS nesting, color-mix, dvh support)
  */
 
@@ -160,6 +160,12 @@ ul, ol { list-style: none; }
   -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
   line-height: 1.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    scroll-behavior: auto;
+  }
 }
 
 body {
@@ -1765,6 +1771,41 @@ main:has(#step-5.visible) + .footer {
   box-shadow: 
     var(--shadow-lg),
     0 0 20px color-mix(in srgb, var(--color-brand-success) 20%, transparent);
+}
+
+/* Toast lifecycle animation */
+.toast.toast-animate {
+  animation: toast-lifecycle var(--timing-toast-duration) ease forwards;
+}
+
+@keyframes toast-lifecycle {
+  0% { 
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  10% { 
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  90% { 
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  100% { 
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast.toast-animate {
+    animation: toast-lifecycle-reduced var(--timing-toast-duration) ease forwards;
+  }
+  
+  @keyframes toast-lifecycle-reduced {
+    0%, 90% { opacity: 1; }
+    100% { opacity: 0; }
+  }
 }
 
 /* ============================================================================

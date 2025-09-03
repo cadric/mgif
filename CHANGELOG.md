@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.4] - 2025-09-03 - style.css, script.js
+### Changed
+- Replaced JavaScript smooth scrolling with CSS `scroll-behavior: smooth`
+- Added `@media (prefers-reduced-motion: reduce)` support for smooth scrolling
+- Converted toast notifications from setTimeout to CSS animations
+- Added `toast-lifecycle` keyframes with reduced motion variant
+- Removed `setupSmoothScrolling()` JavaScript function entirely
+- Enhanced toast animation with `animationend` event listener for cleanup
+- Improved performance by eliminating JavaScript timers for UI animations
+
 ## [2.3.3] - 2025-09-03 - style.css
 ### Changed
 - Replaced hardcoded colors in prelaunch warning with global CSS custom properties
