@@ -16,6 +16,7 @@ applyTo: '**'
 
 ### Key Design Patterns
 
+* **Use Modern CSS over Javascript**: Leverage CSS for layout, animations, and transitions to minimize JavaScript usage.
 * **CSS-JS Synchronization**: JavaScript reads timing values from CSS custom properties via `readCssTimings()` with caching and invalidation
 * **Defensive Programming**: IIFE namespace, localStorage debug persistence, idempotent initialization, minimal public API exposure
 * **Progressive Enhancement**: Feature detection, reduced-motion support, graceful degradation

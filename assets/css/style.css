@@ -2,7 +2,7 @@
  * Fedora GNOME Installer Website Styles - Optimized & Modernized
  * @author Cadric
  * @description Ultra-modern, accessible dark theme with latest CSS features
- * @version 2.3.1
+ * @version 2.3.3
  * @requires Chrome ≥113, Firefox ≥117, Safari ≥16.5 (CSS nesting, color-mix, dvh support)
  */
 
@@ -1798,6 +1798,19 @@ main:has(#step-5.visible) + .footer {
    PRELAUNCH WARNING (TEMPORARY)
    ============================================================================ */
 
+/* Prelaunch warning checkbox (hidden) */
+.acknowledge-checkbox {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  clip: rect(0, 0, 0, 0);
+}
+
+/* Hide warning when checkbox is checked */
+.acknowledge-checkbox:checked + .prelaunch-warning {
+  display: none;
+}
+
 .prelaunch-warning {
   position: fixed;
   inset-inline-start: 50%;
@@ -1805,10 +1818,10 @@ main:has(#step-5.visible) + .footer {
   transform: translate(-50%, -50%);
   z-index: 1100;
   background: var(--color-brand-danger);
-  color: #ffffff;
+  color: var(--color-text-accent);
   border: 3px solid var(--color-brand-danger-dark);
   border-radius: var(--radius-lg);
-  box-shadow: 0 20px 40px color-mix(in srgb, black 45%, transparent);
+  box-shadow: 0 20px 40px color-mix(in srgb, var(--color-bg-primary) 45%, transparent);
   padding-block: clamp(var(--space-lg), 2vw, var(--space-2xl));
   padding-inline: clamp(var(--space-xl), 3vw, var(--space-3xl));
   min-inline-size: 280px;
@@ -1823,15 +1836,15 @@ main:has(#step-5.visible) + .footer {
   user-select: none;
 }
 
-/* Button inside prelaunch warning */
+/* Label styled as button inside prelaunch warning */
 .prelaunch-warning .acknowledge-btn {
   display: inline-block;
   margin-block-start: var(--space-md);
   padding: var(--space-sm) var(--space-md);
   border-radius: var(--radius-base);
-  border: 2px solid #ffffff;
+  border: 2px solid var(--color-text-accent);
   background: transparent;
-  color: #ffffff;
+  color: var(--color-text-accent);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   line-height: 1.1;
@@ -1839,10 +1852,11 @@ main:has(#step-5.visible) + .footer {
   text-transform: none;
   pointer-events: auto;
   transition: background-color var(--transition-fast), transform var(--transition-fast), opacity var(--transition-fast);
+  user-select: none;
 }
 
 .prelaunch-warning .acknowledge-btn:is(:hover, :focus-visible) {
-  background: color-mix(in srgb, #ffffff 20%, transparent);
+  background: color-mix(in srgb, var(--color-text-accent) 20%, transparent);
   transform: translateY(-1px);
 }
 

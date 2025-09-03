@@ -3,7 +3,7 @@
   Fedora GNOME Installer Website - Minimal Setup Guide
   @author Cadric
   @description Progressive web application for Fedora GNOME installation
-  @version 2.3.1
+  @version 2.3.2
 -->
 <html class="no-js" lang="en">
 <head>
@@ -60,11 +60,12 @@
     <a href="#main-content" class="skip-link">Skip to main content</a>
 
     <!-- Prelaunch warning (remove this block when site is ready) -->
+    <input type="checkbox" id="acknowledge-risk" class="acknowledge-checkbox" aria-describedby="warning-text">
     <div class="prelaunch-warning" role="alert" aria-live="assertive">
-        <p>NOT READY FOR USE - PROCEED WITH CARE</p>
-        <button id="acknowledge-risk-btn" type="button" class="acknowledge-btn" aria-label="I understand the risks involved with using anything on this page">
+        <p id="warning-text">NOT READY FOR USE - PROCEED WITH CARE</p>
+        <label for="acknowledge-risk" class="acknowledge-btn" aria-label="I understand the risks involved with using anything on this page">
             I understand the risks involved with using anything on this page
-        </button>
+        </label>
     </div>
 
     <!-- Progress indicator at top -->

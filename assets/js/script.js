@@ -2,7 +2,7 @@
  * Fedora GNOME Installer Website - Page Transitions & Interactions
  * @author Cadric
  * @description Modern ES2020+ implementation with progressive enhancement
- * @version 2.1.5
+ * @version 2.1.6
  * @requires Chrome ≥113, Firefox ≥117, Safari ≥16.5 (for CSS nesting compatibility)
  */
 
@@ -1392,15 +1392,6 @@ const initializeProgressiveEnhancements = () => {
 document.readyState === 'loading'
     ? document.addEventListener('DOMContentLoaded', initializeProgressiveEnhancements)
     : initializeProgressiveEnhancements();
-
-// Prelaunch warning: acknowledge and remove box
-document.addEventListener('click', (e) => {
-    const ackBtn = e.target.closest('#acknowledge-risk-btn');
-    if (!ackBtn) return;
-    e.preventDefault();
-    const warning = document.querySelector('.prelaunch-warning');
-    warning?.remove();
-});
 
 /**
  * Setup copy buttons functionality

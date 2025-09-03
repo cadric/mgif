@@ -8,6 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.3] - 2025-09-03 - style.css
+### Changed
+- Replaced hardcoded colors in prelaunch warning with global CSS custom properties
+- Used `--color-text-accent` instead of `#ffffff` for text and border colors
+- Used `--color-bg-primary` in box-shadow instead of hardcoded `black`
+- Improved consistency with design system and global color tokens
+
+## [2.3.2] - 2025-09-03 - index.html, style.css, script.js
+### Changed
+- Replaced JavaScript-based prelaunch warning with CSS-only solution using checkbox hack
+- Converted acknowledge button from `<button>` to `<label>` for semantic HTML
+- Removed JavaScript event listener for warning dismissal
+- Added hidden checkbox to control warning visibility state
+- Improved accessibility with proper `aria-describedby` and label associations
+
 ## [2.3.1] - 2025-09-03 - index.html, style.css
 ### Changed
 - Moved logo inline with "GNOME" text in hero title
