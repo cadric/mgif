@@ -2,7 +2,7 @@
  * Fedora GNOME Installer Website Styles - Optimized & Modernized
  * @author Cadric
  * @description Ultra-modern, accessible dark theme with latest CSS features
- * @version 2.3.4
+ * @version 2.5.7
  * @requires Chrome ≥113, Firefox ≥117, Safari ≥16.5 (CSS nesting, color-mix, dvh support)
  */
 
@@ -438,13 +438,6 @@ body {
   }
 }
 
-@keyframes collectStep {
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 /* ============================================================================
    HERO SECTION
    ============================================================================ */
@@ -762,6 +755,137 @@ body {
   43% { opacity: 1; }
   45% { opacity: 0.2; }
   46% { opacity: 1; }
+}
+
+@keyframes collectStep {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes video-glow {
+  0%, 100% {
+    box-shadow: 
+      0 0 20px color-mix(in srgb, var(--color-brand-primary) 15%, transparent),
+      0 0 40px color-mix(in srgb, var(--color-brand-primary) 10%, transparent);
+  }
+  50% {
+    box-shadow: 
+      0 0 30px color-mix(in srgb, var(--color-brand-primary) 25%, transparent),
+      0 0 60px color-mix(in srgb, var(--color-brand-primary) 15%, transparent);
+  }
+}
+
+@keyframes copy-feedback-success {
+  0% { 
+    background: color-mix(in srgb, var(--color-brand-success) 15%, var(--color-bg-secondary));
+    border-color: var(--color-brand-success);
+    color: var(--color-brand-success);
+    transform: scale(1.05);
+  }
+  10% { 
+    background: color-mix(in srgb, var(--color-brand-success) 25%, var(--color-bg-secondary));
+    border-color: var(--color-brand-success);
+    color: var(--color-text-accent);
+    transform: scale(1.05);
+  }
+  85% { 
+    background: color-mix(in srgb, var(--color-brand-success) 15%, var(--color-bg-secondary));
+    border-color: var(--color-brand-success);
+    color: var(--color-brand-success);
+    transform: scale(1.05);
+  }
+  100% { 
+    background: color-mix(in srgb, var(--color-bg-secondary) 90%, transparent);
+    border-color: var(--color-border-subtle);
+    color: var(--color-text-secondary);
+    transform: scale(1);
+  }
+}
+
+@keyframes copy-feedback-error {
+  0% { 
+    background: color-mix(in srgb, var(--color-brand-warning) 15%, var(--color-bg-secondary));
+    border-color: var(--color-brand-warning);
+    color: var(--color-brand-warning);
+    transform: scale(1.05);
+  }
+  10% { 
+    background: color-mix(in srgb, var(--color-brand-warning) 25%, var(--color-bg-secondary));
+    border-color: var(--color-brand-warning);
+    color: var(--color-text-accent);
+    transform: scale(1.05);
+  }
+  85% { 
+    background: color-mix(in srgb, var(--color-brand-warning) 15%, var(--color-bg-secondary));
+    border-color: var(--color-brand-warning);
+    color: var(--color-brand-warning);
+    transform: scale(1.05);
+  }
+  100% { 
+    background: color-mix(in srgb, var(--color-bg-secondary) 90%, transparent);
+    border-color: var(--color-border-subtle);
+    color: var(--color-text-secondary);
+    transform: scale(1);
+  }
+}
+
+@keyframes toast-lifecycle {
+  0% { 
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  10% { 
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  90% { 
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  100% { 
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+}
+
+/* Reduced motion variants */
+@media (prefers-reduced-motion: reduce) {
+  @keyframes copy-feedback-success-reduced {
+    0%, 85% { 
+      background: color-mix(in srgb, var(--color-brand-success) 15%, var(--color-bg-secondary));
+      border-color: var(--color-brand-success);
+      color: var(--color-brand-success);
+    }
+    100% { 
+      background: color-mix(in srgb, var(--color-bg-secondary) 90%, transparent);
+      border-color: var(--color-border-subtle);
+      color: var(--color-text-secondary);
+    }
+  }
+  
+  @keyframes copy-feedback-error-reduced {
+    0%, 85% { 
+      background: color-mix(in srgb, var(--color-brand-warning) 15%, var(--color-bg-secondary));
+      border-color: var(--color-brand-warning);
+      color: var(--color-brand-warning);
+    }
+    100% { 
+      background: color-mix(in srgb, var(--color-bg-secondary) 90%, transparent);
+      border-color: var(--color-border-subtle);
+      color: var(--color-text-secondary);
+    }
+  }
+  
+  @keyframes toast-lifecycle-reduced {
+    0%, 90% { opacity: 1; }
+    100% { opacity: 0; }
+  }
 }
 
 /* ============================================================================
@@ -1180,23 +1304,6 @@ body {
   text-shadow: 0 2px 4px color-mix(in srgb, black 50%, transparent);
 }
 
-@keyframes video-glow {
-  0% {
-    box-shadow: 
-      0 25px 50px -12px color-mix(in srgb, black 25%, transparent),
-      0 0 20px color-mix(in srgb, var(--color-brand-primary) 10%, transparent),
-      0 0 40px color-mix(in srgb, var(--color-brand-primary) 5%, transparent),
-      inset 0 0 0 1px color-mix(in srgb, var(--color-brand-primary) 15%, transparent);
-  }
-  100% {
-    box-shadow: 
-      0 25px 50px -12px color-mix(in srgb, black 25%, transparent),
-      0 0 25px color-mix(in srgb, var(--color-brand-primary) 20%, transparent),
-      0 0 50px color-mix(in srgb, var(--color-brand-primary) 10%, transparent),
-      inset 0 0 0 1px color-mix(in srgb, var(--color-brand-primary) 25%, transparent);
-  }
-}
-
 /* ============================================================================
    CODE BLOCKS & CONTENT
    ============================================================================ */
@@ -1274,17 +1381,49 @@ body {
     transition-duration: var(--animation-duration-fast);
   }
   
-  /* Copy states */
+  /* Copy states with CSS animations */
   &.copy-ok {
     background: color-mix(in srgb, var(--color-brand-success) 15%, var(--color-bg-secondary));
     border-color: var(--color-brand-success);
     color: var(--color-brand-success);
+    animation: copy-feedback-success var(--timing-copy-feedback) ease forwards;
+    
+    & .copy-text::before {
+      content: 'Copied!';
+    }
+    & .copy-text {
+      text-indent: -9999px;
+      overflow: hidden;
+      position: relative;
+      
+      &::before {
+        position: absolute;
+        left: 0;
+        text-indent: 0;
+      }
+    }
   }
   
   &.copy-fail {
     background: color-mix(in srgb, var(--color-brand-warning) 15%, var(--color-bg-secondary));
     border-color: var(--color-brand-warning);
     color: var(--color-brand-warning);
+    animation: copy-feedback-error var(--timing-copy-feedback) ease forwards;
+    
+    & .copy-text::before {
+      content: 'Failed';
+    }
+    & .copy-text {
+      text-indent: -9999px;
+      overflow: hidden;
+      position: relative;
+      
+      &::before {
+        position: absolute;
+        left: 0;
+        text-indent: 0;
+      }
+    }
   }
   
   /* Icon styles */
@@ -1778,33 +1917,9 @@ main:has(#step-5.visible) + .footer {
   animation: toast-lifecycle var(--timing-toast-duration) ease forwards;
 }
 
-@keyframes toast-lifecycle {
-  0% { 
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-  10% { 
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-  90% { 
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-  100% { 
-    opacity: 0;
-    transform: translateX(-50%) translateY(-20px);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .toast.toast-animate {
     animation: toast-lifecycle-reduced var(--timing-toast-duration) ease forwards;
-  }
-  
-  @keyframes toast-lifecycle-reduced {
-    0%, 90% { opacity: 1; }
-    100% { opacity: 0; }
   }
 }
 

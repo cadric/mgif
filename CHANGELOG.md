@@ -8,6 +8,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.7] - 2025-01-27 - style.css
+### Changed
+- Organized CSS keyframes: centralized all @keyframes declarations into dedicated KEYFRAME ANIMATIONS section
+- Removed duplicate keyframes scattered throughout the file for better maintainability
+- Improved CSS structure and readability by consolidating animation definitions
+
+## [2.3.5] - 2025-09-03 - style.css, script.js
+### Changed
+- Converted copy button feedback from JavaScript setTimeout to CSS animations
+- Added `copy-feedback-success` and `copy-feedback-error` keyframe animations
+- Implemented CSS-based text content switching using `::before` pseudo-elements
+- Added reduced motion variants for copy button animations
+- Replaced DOM text manipulation with pure CSS content changes
+- Enhanced visual feedback with scale transforms and color transitions
+- Eliminated JavaScript timers for copy button state management
+- Improved performance through GPU-accelerated CSS animations
+
 ## [2.3.4] - 2025-09-03 - style.css, script.js
 ### Changed
 - Replaced JavaScript smooth scrolling with CSS `scroll-behavior: smooth`

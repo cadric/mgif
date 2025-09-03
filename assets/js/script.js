@@ -2,7 +2,7 @@
  * Fedora GNOME Installer Website - Page Transitions & Interactions
  * @author Cadric
  * @description Modern ES2020+ implementation with progressive enhancement
- * @version 2.1.7
+ * @version 2.1.8
  * @requires Chrome ≥113, Firefox ≥117, Safari ≥16.5 (for CSS nesting compatibility)
  */
 
@@ -1426,27 +1426,33 @@ const setupCopyButtons = () => {
 };
 
 /**
- * Show visual feedback when text is copied
+ * Show visual feedback when text is copied using CSS animations
  */
 const showCopyFeedback = (button, success = true) => {
-    const originalText = button.textContent;
     const originalAriaLabel = button.getAttribute('aria-label') || '';
     
-    button.classList.add(success ? 'copy-ok' : 'copy-fail');
+    // Reset any existing animation
+    button.classList.remove('copy-ok', 'copy-fail');
     
-    if (success) {
-        button.textContent = 'Copied!';
-        button.setAttribute('aria-label', 'Code copied to clipboard');
-    } else {
-        button.textContent = 'Failed';
-        button.setAttribute('aria-label', 'Copy failed - please try manual copy');
-    }
+    // Update aria-label for screen readers
+    button.setAttribute('aria-label', success 
+        ? 'Code copied to clipboard' 
+        : 'Copy failed - please try manual copy'
+    );
     
-    setTimeout(() => {
-        button.textContent = originalText;
+    // Start CSS animation
+    requestAnimationFrame(() => {
+        button.classList.add(success ? 'copy-ok' : 'copy-fail');
+    });
+    
+    // Listen for animation end to restore original state
+    const handleAnimationEnd = () => {
         button.setAttribute('aria-label', originalAriaLabel);
         button.classList.remove('copy-ok', 'copy-fail');
-    }, readCssTimings().copyFeedback);
+        button.removeEventListener('animationend', handleAnimationEnd);
+    };
+    
+    button.addEventListener('animationend', handleAnimationEnd, { once: true });
 };
 
 /**
