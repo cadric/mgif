@@ -2,8 +2,8 @@
  * Fedora GNOME Installer Website Styles - Optimized & Modernized
  * @author Cadric
  * @description Ultra-modern, accessible dark theme with latest CSS features
- * @version 2.1.2
- * @requires Chromium ≥84, Firefox ≥90, Safari ≥14.1 (CSS nesting, color-mix, dvh support)
+ * @version 2.1.4
+ * @requires Chrome ≥113, Firefox ≥117, Safari ≥16.5 (CSS nesting, color-mix, dvh support)
  */
 
 /* ============================================================================
@@ -223,17 +223,22 @@ body {
    ============================================================================ */
 
 .skip-link {
-  position: absolute;
+  position: absolute !important;
   inset-block-start: -40px;
   inset-inline-start: 6px;
-  background: var(--color-brand-primary);
-  color: white;
-  padding-block: var(--space-sm);
-  padding-inline: var(--space-md);
+  background: var(--color-brand-primary) !important;
+  color: white !important;
+  padding-block: var(--space-sm) !important;
+  padding-inline: var(--space-md) !important;
+  margin: 0 !important;
   border-radius: var(--radius-base);
   text-decoration: none;
   z-index: var(--z-index-tooltip);
   transition: var(--transition-fast);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  white-space: nowrap;
   
   &:focus {
     inset-block-start: 6px;
@@ -292,7 +297,7 @@ body {
 
 .progress {
   inline-size: 100%; /* Full width */
-  block-size: 10px; /* Thinner bar */
+  block-size: 3px; /* Thinner bar */
   background-color: transparent; /* Make track transparent */
   border: none;
   border-radius: 0; /* No radius for a full-width bar */

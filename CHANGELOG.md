@@ -8,7 +8,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.4] - 2025-09-03 - style.css, script.js
+### Changed
+- Updated browser compatibility requirements to Chrome ≥113, Firefox ≥117, Safari ≥16.5 for CSS nesting support
+
 * Pending changes not yet released
+
+---
+
+## [2.1.3] - 2025-09-02 - style.css
+### Fixed
+- Fixed skip link visibility issue caused by global CSS reset overriding padding
+- Added !important declarations to skip link padding, margin, background, and color
+- Added font-size, font-weight, line-height, and white-space properties for better presentation
+
+---
+
+## [2.1.3] - 2025-09-02 - script.js
+### Changed
+- Added throttle logic to cursor arrow animation to stop after 2 seconds of mouse inactivity
+- Added mouseInactivityTimeoutId and mouseInactivityDelay fields for better CPU performance
+- Updated mousemove handler to clear/set inactivity timeout and track last movement time
 
 ---
 
