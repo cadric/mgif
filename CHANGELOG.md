@@ -8,9 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [2.1.4] - 2025-09-03 - style.css, script.js
+## [2.1.4] - 2025-09-03 - style.css, script.js, index.html
 ### Changed
 - Updated browser compatibility requirements to Chrome ≥113, Firefox ≥117, Safari ≥16.5 for CSS nesting support
+- Removed inline style from HTML to comply with Content Security Policy (CSP)
+- Added CSS class `.warning-section` for security warning styling
 
 * Pending changes not yet released
 
