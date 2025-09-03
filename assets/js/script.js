@@ -676,14 +676,13 @@ class FedoraInstallerUI {
                 }
             });
 
-            stepElement.classList.add('collected-step-entering');
-            this.#collectedSteps.appendChild(stepElement);
+            // Add animation end listener for proper state management
+            stepElement.addEventListener('animationend', () => {
+                stepElement.classList.add('collected-step-settled');
+            }, { once: true });
 
-            // Single smooth animation with CSS - no separate highlight needed
-            requestAnimationFrame(() => {
-                stepElement.classList.remove('collected-step-entering');
-                stepElement.classList.add('collected-step-entered');
-            });
+            // Add to DOM - CSS animation starts automatically
+            this.#collectedSteps.appendChild(stepElement);
 
         } catch (err) {
             error('Failed to collect step:', err);
@@ -1420,10 +1419,8 @@ const showCopyFeedback = (button, success = true) => {
         : 'Copy failed - please try manual copy'
     );
     
-    // Start CSS animation
-    requestAnimationFrame(() => {
-        button.classList.add(success ? 'copy-ok' : 'copy-fail');
-    });
+    // Start CSS animation - no requestAnimationFrame needed
+    button.classList.add(success ? 'copy-ok' : 'copy-fail');
     
     // Listen for animation end to restore original state
     const handleAnimationEnd = () => {
@@ -1485,10 +1482,8 @@ const showErrorToast = (message) => {
     toast.classList.add('toast-error');
     toast.removeAttribute('hidden');
     
-    // Start CSS animation lifecycle
-    requestAnimationFrame(() => {
-        toast.classList.add('toast-animate');
-    });
+    // Start CSS animation lifecycle - no requestAnimationFrame needed
+    toast.classList.add('toast-animate');
     
     // Listen for animation end to hide toast
     const handleAnimationEnd = () => {

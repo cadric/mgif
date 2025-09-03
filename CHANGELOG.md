@@ -23,9 +23,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added reduced motion support for new `collectStep-reduced` animation
 - Improved performance by removing 1-second highlight timers on every scroll action
 
+### Added
+- **Step collection animation optimization:** Added `collected-step-settled` CSS class for proper final state
+- **Enhanced CSS animation management:** Added `animationend` event listeners for better state control
+- **Performance improvements:** Removed unnecessary `requestAnimationFrame` calls from copy/toast animations
+
 ### Fixed
 - **UX Issue:** Collected steps no longer "pop" and flash when scrolling through visited sections
 - **Performance:** Eliminated unnecessary re-highlighting of existing steps during scroll navigation
+- **JavaScript optimization:** Removed redundant `collected-step-entering`/`collected-step-entered` class management
+- **Animation efficiency:** Simplified CSS-first animation approach with proper state management
 - **Accessibility:** Better reduced motion support for step collection animations
 
 ## [2.5.8] - 2025-09-04 - style.css

@@ -385,6 +385,13 @@ body {
   }
 }
 
+/* Animation completion state */
+.collected-step-settled {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  background-color: color-mix(in srgb, var(--color-brand-primary) 10%, transparent);
+}
+
 /* Responsive step titles */
 .collected-step-title-short {
   display: none;
