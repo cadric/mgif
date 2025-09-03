@@ -1819,8 +1819,35 @@ main:has(#step-5.visible) + .footer {
   letter-spacing: 0.06em;
   font-size: clamp(var(--font-size-lg), 1.5vw + 0.9rem, var(--font-size-3xl));
   line-height: var(--line-height-tight);
-  pointer-events: none;
+  pointer-events: auto;
   user-select: none;
+}
+
+/* Button inside prelaunch warning */
+.prelaunch-warning .acknowledge-btn {
+  display: inline-block;
+  margin-block-start: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-base);
+  border: 2px solid #ffffff;
+  background: transparent;
+  color: #ffffff;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.1;
+  cursor: pointer;
+  text-transform: none;
+  pointer-events: auto;
+  transition: background-color var(--transition-fast), transform var(--transition-fast), opacity var(--transition-fast);
+}
+
+.prelaunch-warning .acknowledge-btn:is(:hover, :focus-visible) {
+  background: color-mix(in srgb, #ffffff 20%, transparent);
+  transform: translateY(-1px);
+}
+
+.prelaunch-warning p {
+  margin: 0;
 }
 
 /* ---- GNOME inline logo ---- */

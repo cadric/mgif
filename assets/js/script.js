@@ -1393,6 +1393,15 @@ document.readyState === 'loading'
     ? document.addEventListener('DOMContentLoaded', initializeProgressiveEnhancements)
     : initializeProgressiveEnhancements();
 
+// Prelaunch warning: acknowledge and remove box
+document.addEventListener('click', (e) => {
+    const ackBtn = e.target.closest('#acknowledge-risk-btn');
+    if (!ackBtn) return;
+    e.preventDefault();
+    const warning = document.querySelector('.prelaunch-warning');
+    warning?.remove();
+});
+
 /**
  * Setup copy buttons functionality
  */
