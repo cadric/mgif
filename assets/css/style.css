@@ -2,7 +2,7 @@
  * Fedora GNOME Installer Website Styles - Optimized & Modernized
  * @author Cadric
  * @description Ultra-modern, accessible dark theme with latest CSS features
- * @version 2.1.5
+ * @version 2.2.0
  * @requires Chrome ≥113, Firefox ≥117, Safari ≥16.5 (CSS nesting, color-mix, dvh support)
  */
 
@@ -563,8 +563,17 @@ body {
   font-size: var(--font-size-2xl);
   color: var(--color-text-muted);
   font-weight: var(--font-weight-light);
-  animation: fadeInUp var(--animation-duration-entrance) ease 0.4s both;
   line-height: var(--line-height-tight);
+  border-right: 2px solid rgba(255,255,255,.75);
+  white-space: nowrap;
+  overflow: hidden;
+  transform: translateY(-50%);
+}
+
+/* Animation */
+.anim-typewriter {
+  animation: typewriter 4s steps(44) 1s 1 normal both,
+             blinkTextCursor 500ms steps(44) infinite normal;
 }
 
 /* ============================================================================
@@ -713,6 +722,16 @@ body {
   50% {
     opacity: 0.7;
   }
+}
+
+@keyframes typewriter {
+  from { width: 0; }
+  to { width: 15.5em; }
+}
+
+@keyframes blinkTextCursor {
+  from { border-right-color: rgba(255,255,255,.75); }
+  to { border-right-color: transparent; }
 }
 
 /* ============================================================================

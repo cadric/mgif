@@ -8,6 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0] - 2025-09-03 - style.css, index.html
+### Added
+- Typewriter animation effect for subtitle element
+- New CSS keyframes for typewriter and blinking cursor animations
+- Enhanced subtitle styling with overflow hidden and cursor border
+
+## [2.1.7] - 2025-09-03 - assets/css/style_v2.css
+### Added
+- Created production-ready version of style.css, stripped of comments and debug code, ready for minification.
+
+## [2.1.6] - 2025-09-03 - script_v2.js
+### Added
+- Created production-ready version of script.js without debug code and comments
+- Minification-ready script optimized for Terser processing
+
 ## [2.1.5] - 2025-09-03 - style.css, script.js
 ### Added
 - Electric pulse animation system for hero grid background
