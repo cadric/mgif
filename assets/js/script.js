@@ -727,13 +727,25 @@ class FedoraInstallerUI {
                 }
             }
 
-            const progress = totalSteps > 0
-                ? Math.min(100, Math.max(0, (currentStepNumber / totalSteps) * 100))
+            const progressValue = totalSteps > 0
+                ? Math.min(totalSteps, Math.max(0, currentStepNumber))
+                : 0;
+            
+            const progressPercentage = totalSteps > 0
+                ? (currentStepNumber / totalSteps) * 100
                 : 0;
 
             if (this.#progressEl) {
-                this.#progressEl.value = progress;
-                this.#progressEl.setAttribute('aria-valuenow', String(Math.round(progress)));
+                // Use CSS custom properties for smooth animation
+                document.documentElement.style.setProperty('--progress-value', String(progressValue));
+                document.documentElement.style.setProperty('--progress-max', String(totalSteps));
+                
+                // Keep standard progress attributes for accessibility
+                this.#progressEl.value = progressPercentage;
+                this.#progressEl.max = 100;
+                this.#progressEl.setAttribute('aria-valuenow', String(Math.round(progressPercentage)));
+                this.#progressEl.setAttribute('aria-valuemin', '0');
+                this.#progressEl.setAttribute('aria-valuemax', '100');
                 
                 const stepText = currentStepNumber > 0 
                     ? `Step ${currentStepNumber} of ${totalSteps}`

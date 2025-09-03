@@ -104,6 +104,10 @@
   --z-index-fixed: 1030;
   --z-index-tooltip: 1070;
   --container-max-width: min(1280px, calc(100vw - 2rem));
+  
+  /* Progress System */
+  --progress-value: 0;
+  --progress-max: 100;
 }
 
 /* Dark Mode & Accessibility */
@@ -319,6 +323,9 @@ body {
   inset-block-start: 0;
   inset-inline-start: 0;
   
+  /* Use CSS custom properties for smooth transitions */
+  --progress-percentage: calc(var(--progress-value) / var(--progress-max) * 100%);
+  
   &::-webkit-progress-bar {
     background-color: transparent;
   }
@@ -326,13 +333,28 @@ body {
   &::-webkit-progress-value {
     background: linear-gradient(90deg, var(--color-brand-primary), var(--color-brand-secondary));
     border-radius: 0;
-    transition: inline-size var(--transition-base);
+    transition: all var(--transition-base);
   }
   
   &::-moz-progress-bar {
     background: linear-gradient(90deg, var(--color-brand-primary), var(--color-brand-secondary));
     border-radius: 0;
-    transition: inline-size var(--transition-base);
+    transition: all var(--transition-base);
+  }
+  
+  /* Custom progress bar using pseudo-element for better control */
+  &::before {
+    content: '';
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    block-size: 100%;
+    inline-size: var(--progress-percentage);
+    background: linear-gradient(90deg, var(--color-brand-primary), var(--color-brand-secondary));
+    transition: 
+      inline-size var(--transition-base),
+      opacity var(--transition-base);
+    z-index: 1;
   }
 }
 
