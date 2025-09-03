@@ -8,6 +8,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.6.0] - 2025-09-04 - style.css, script.js
+### Removed
+- **Complete highlight system rework:** Eliminated problematic "pop" effects on collected steps
+- Removed `#highlightElement()` method and all JavaScript timeout-based highlighting
+- Removed `.highlight` CSS class and `highlight-pulse` keyframes (unused functionality)
+- Removed `--timing-highlight` CSS variable and all references
+- Eliminated JavaScript `setTimeout` usage for highlight effects
+
+### Changed
+- **Enhanced collectStep animation:** Integrated subtle highlight effect into single entrance animation
+- Converted step collection to pure CSS animations with no JavaScript timers
+- Steps no longer highlight when revisiting sections (fixes annoying scroll behavior)
+- Added reduced motion support for new `collectStep-reduced` animation
+- Improved performance by removing 1-second highlight timers on every scroll action
+
+### Fixed
+- **UX Issue:** Collected steps no longer "pop" and flash when scrolling through visited sections
+- **Performance:** Eliminated unnecessary re-highlighting of existing steps during scroll navigation
+- **Accessibility:** Better reduced motion support for step collection animations
+
+## [2.5.8] - 2025-09-04 - style.css
+### Added
+- Implemented missing `.highlight` class CSS animations for visual feedback
+- Added `highlight-pulse` keyframes with background glow and scale transforms
+- Created reduced motion variant `highlight-pulse-reduced` for accessibility
+- Integrated highlight effects with existing design system using CSS custom properties
+
 ## [2.5.7] - 2025-01-27 - style.css
 ### Changed
 - Organized CSS keyframes: centralized all @keyframes declarations into dedicated KEYFRAME ANIMATIONS section

@@ -2,7 +2,7 @@
  * Fedora GNOME Installer Website Styles - Optimized & Modernized
  * @author Cadric
  * @description Ultra-modern, accessible dark theme with latest CSS features
- * @version 2.5.7
+ * @version 2.6.0
  * @requires Chrome ≥113, Firefox ≥117, Safari ≥16.5 (CSS nesting, color-mix, dvh support)
  */
 
@@ -96,7 +96,6 @@
   --animation-duration-entrance: 1s;
   --timing-transition: 0.3s;
   --timing-quick: 0.1s;
-  --timing-highlight: 1s;
   --timing-copy-feedback: 1.5s;
   --timing-toast-duration: 5s;
   
@@ -123,7 +122,6 @@
     --animation-duration-entrance: 0.01ms;
     --timing-transition: 0.01ms;
     --timing-quick: 0.01ms;
-    --timing-highlight: 0.01ms;
     --timing-copy-feedback: 0.01ms;
     --timing-toast-duration: 0.01ms;
   }
@@ -378,6 +376,12 @@ body {
   &:active {
     transform: translateY(-1px);
     transition-duration: var(--animation-duration-fast);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .collected-step {
+    animation: collectStep-reduced var(--animation-duration-base) ease forwards;
   }
 }
 
@@ -758,13 +762,33 @@ body {
 }
 
 @keyframes collectStep {
-  from {
+  0% {
     opacity: 0;
-    transform: translateY(-10px);
+    transform: translateY(-20px) scale(0.95);
+    background-color: transparent;
+    box-shadow: none;
   }
-  to {
+  15% {
+    opacity: 0.8;
+    transform: translateY(-5px) scale(1.02);
+    background-color: color-mix(in srgb, var(--color-brand-primary) 15%, transparent);
+    box-shadow: 
+      0 0 0 2px color-mix(in srgb, var(--color-brand-primary) 25%, transparent),
+      0 0 15px color-mix(in srgb, var(--color-brand-primary) 20%, transparent);
+  }
+  70% {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1.01);
+    background-color: color-mix(in srgb, var(--color-brand-primary) 12%, transparent);
+    box-shadow: 
+      0 0 0 1px color-mix(in srgb, var(--color-brand-primary) 20%, transparent),
+      0 0 10px color-mix(in srgb, var(--color-brand-primary) 15%, transparent);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    background-color: color-mix(in srgb, var(--color-brand-primary) 10%, transparent);
+    box-shadow: none;
   }
 }
 
@@ -885,6 +909,17 @@ body {
   @keyframes toast-lifecycle-reduced {
     0%, 90% { opacity: 1; }
     100% { opacity: 0; }
+  }
+  
+  @keyframes collectStep-reduced {
+    0% {
+      opacity: 0;
+      background-color: color-mix(in srgb, var(--color-brand-primary) 15%, transparent);
+    }
+    100% {
+      opacity: 1;
+      background-color: color-mix(in srgb, var(--color-brand-primary) 10%, transparent);
+    }
   }
 }
 

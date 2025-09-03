@@ -2,7 +2,7 @@
  * Fedora GNOME Installer Website - Page Transitions & Interactions
  * @author Cadric
  * @description Modern ES2020+ implementation with progressive enhancement
- * @version 2.1.8
+ * @version 2.6.0
  * @requires Chrome ≥113, Firefox ≥117, Safari ≥16.5 (for CSS nesting compatibility)
  */
 
@@ -63,7 +63,6 @@ const readCssTimings = () => {
             entrance: toMs(styles.getPropertyValue('--animation-duration-entrance').trim() || '1s'),
             transition: toMs(styles.getPropertyValue('--timing-transition').trim() || '0.3s'),
             quick: toMs(styles.getPropertyValue('--timing-quick').trim() || '0.1s'),
-            highlight: toMs(styles.getPropertyValue('--timing-highlight').trim() || '1s'),
             copyFeedback: toMs(styles.getPropertyValue('--timing-copy-feedback').trim() || '1.5s'),
             toastDuration: toMs(styles.getPropertyValue('--timing-toast-duration').trim() || '5s')
         };
@@ -78,7 +77,6 @@ const readCssTimings = () => {
             entrance: 1000,
             transition: 300,
             quick: 100,
-            highlight: 1000,
             copyFeedback: 1500,
             toastDuration: 5000
         };
@@ -652,7 +650,8 @@ class FedoraInstallerUI {
         try {
             const existingStep = this.#collectedSteps.querySelector(`[data-step-id="${stepId}"]`);
             if (existingStep) {
-                this.#highlightElement(existingStep);
+                // Just update aria-current, no visual highlighting needed
+                this.#updateCollectedStepsAria(sectionIndex);
                 return;
             }
 
@@ -680,12 +679,11 @@ class FedoraInstallerUI {
             stepElement.classList.add('collected-step-entering');
             this.#collectedSteps.appendChild(stepElement);
 
+            // Single smooth animation with CSS - no separate highlight needed
             requestAnimationFrame(() => {
                 stepElement.classList.remove('collected-step-entering');
                 stepElement.classList.add('collected-step-entered');
             });
-
-            setTimeout(() => this.#highlightElement(stepElement), this.#timings.quick);
 
         } catch (err) {
             error('Failed to collect step:', err);
@@ -708,24 +706,6 @@ class FedoraInstallerUI {
             });
         } catch (err) {
             error('Failed to update collected steps aria attributes:', err);
-        }
-    }
-
-    /**
-     * Highlight element with visual feedback
-     */
-    #highlightElement(element) {
-        try {
-            element.classList.add('highlight');
-            
-            setTimeout(() => {
-                element.classList.remove('highlight');
-            }, this.#timings.highlight);
-            
-            element.classList.add('has-hover-effects');
-            
-        } catch (err) {
-            error('Failed to highlight element:', err);
         }
     }
 
