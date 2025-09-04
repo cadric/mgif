@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.3.2] - 2025-09-04 - manifest.json
+### Fixed
+- Added missing PWA manifest fields: id, scope, orientation, lang, dir, categories
+- Enhanced icon definitions with proper paths and purpose attributes
+- Added screenshot field for better app store presentation
+- Updated description to match current project scope
+
 ## [Unreleased]
 
 ## [2.6.0] - 2025-09-04 - style.css, script.js

@@ -1,0 +1,44 @@
+{
+  "_comment": "Fedora GNOME Installer PWA Manifest - @version 2.3.2",
+  "name": "Install Fedora GNOME - Minimal Setup Guide",
+  "short_name": "Fedora GNOME Setup",
+  "description": "A minimal, elegant Fedora GNOME installation script with interactive setup. Choose your desktop style: pure GNOME, Windows-like, or macOS appearance.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["productivity", "utilities", "developer"],
+  "icons": [
+    {
+      "src": "assets/icons/favicon-32.png",
+      "sizes": "32x32",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icons/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "assets/og/og-ifg-1200x630.png",
+      "sizes": "1200x630",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ]
+}
